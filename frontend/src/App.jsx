@@ -49,24 +49,20 @@ function App() {
     }
   }, [templateFile]);
 
-  useEffect(() => {
-    if (selectedTemplate) {
-      loadTemplatePreview(selectedTemplate.id);
-    }
-  }, [selectedTemplate]);
-
   async function apiFetch(path, options = {}) {
+    const headers = options.headers ? { ...options.headers } : {};
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch(`${API_BASE}${path}`, {
       credentials: 'include',
-      headers: {
-        'Content-Type': options.body instanceof FormData ? undefined : 'application/json',
-        ...options.headers
-      },
+      headers,
       ...options
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Hata oluştu');
+      throw new Error(err.error || 'Hata olustu');
     }
     return res.json();
   }
@@ -79,6 +75,22 @@ function App() {
     } catch {
       setUser(null);
     }
+  }
+
+  function renderFieldDots(fields) {
+    return (fields || []).map((field, idx) => (
+      <div
+        key={`${field.key}-${idx}`}
+        className="field-dot"
+        style={{
+          left: `${(field.x / 595) * 100}%`,
+          bottom: `${(field.y / 842) * 100}%`
+        }}
+        title={`${field.key} (x:${field.x.toFixed(0)}, y:${field.y.toFixed(0)})`}
+      >
+        {field.key}
+      </div>
+    ));
   }
 
   async function handleLogin(e) {
@@ -329,19 +341,26 @@ function App() {
                   </label>
                   {templatePreview && (
                     <div className="pdf-preview-container">
-                      <h3>PDF Önizleme - Tıklayarak alan ekleyin</h3>
-                      <div
-                        className="pdf-preview"
-                        onClick={(e) => handlePdfClick(e, true)}
-                        title="Tıklayarak alan ekleyin"
-                        style={{
-                          backgroundImage: `url(${templatePreview})`,
-                          backgroundSize: 'contain',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundPosition: 'center',
-                          cursor: isAdmin ? 'crosshair' : 'default'
-                        }}
-                      />
+                      <h3>PDF onizleme - Tiklayarak alan ekleyin</h3>
+                      <div className="pdf-frame">
+                        <object
+                          data={`${templatePreview}#toolbar=0`}
+                          type="application/pdf"
+                          className="pdf-embed"
+                        >
+                          <p>PDF goruntulenemedi. <a href={templatePreview} target="_blank" rel="noreferrer">Yeni sekmede ac</a></p>
+                        </object>
+                        <div className="pdf-dots">
+                          {renderFieldDots(selectedFields)}
+                        </div>
+                        {isAdmin && (
+                          <div
+                            className="pdf-click-overlay"
+                            onClick={(e) => handlePdfClick(e, true)}
+                            title="Tiklayarak alan ekleyin"
+                          />
+                        )}
+                      </div>
                       <div className="field-list">
                         <h4>Seçilen Alanlar:</h4>
                         {selectedFields.map((field, idx) => (
@@ -416,17 +435,19 @@ function App() {
               </label>
               {selectedTemplate && reportPreview && (
                 <div className="pdf-preview-container">
-                  <h3>PDF Önizleme - Alanları doldurun</h3>
-                  <div
-                    className="pdf-preview"
-                    style={{
-                      backgroundImage: `url(${reportPreview})`,
-                      backgroundSize: 'contain',
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'center',
-                      minHeight: '600px'
-                    }}
-                  />
+                  <h3>PDF onizleme - Alanlari doldurun</h3>
+                  <div className="pdf-frame">
+                    <object
+                      data={`${reportPreview}#toolbar=0`}
+                      type="application/pdf"
+                      className="pdf-embed"
+                    >
+                      <p>PDF goruntulenemedi. <a href={reportPreview} target="_blank" rel="noreferrer">Yeni sekmede ac</a></p>
+                    </object>
+                    <div className="pdf-dots">
+                      {renderFieldDots(selectedTemplate.field_map_json)}
+                    </div>
+                  </div>
                   <div className="field-form">
                     <h4>Alanları Doldur:</h4>
                     {selectedTemplate.field_map_json.map((field) => (

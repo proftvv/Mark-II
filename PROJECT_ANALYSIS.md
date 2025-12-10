@@ -149,6 +149,7 @@ cd frontend && npm run dev   # Frontend (Vite, --host ile LAN erişimi)
 4. **Logging**: Console.log bazlı logging
 5. **Dosya Güvenliği**: Malicious PDF upload'ı için validasyon yok
 
+6. **v0.0.8 guncellemesi**: Alan seciminde nokta/etiket gosterimi eklendi, rapor onizleme PDF yuklemesi iyilestirildi (frontend/App.jsx, App.css)
 ---
 
 ## 📦 Teknoloji Bağımlılıkları

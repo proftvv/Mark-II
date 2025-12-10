@@ -2,7 +2,7 @@
 MARK-II PROJECT VERSION TRACKING
 ================================
 
-PROJECT VERSION: 0.0.6
+PROJECT VERSION: 0.0.8
 LAST UPDATE: 10 Aralık 2025
 
 ================================
@@ -37,10 +37,10 @@ src/utils/docNumber.js              v0.0.6  [Modified]
 
 FRONTEND FILES (frontend/src/)
 ==============================
-frontend/src/App.jsx                v0.0.6  [Modified]
+frontend/src/App.jsx                v0.0.8  [Modified]
 frontend/src/main.jsx               v0.0.1  [Original]
 frontend/src/index.css              v0.0.1  [Original]
-frontend/src/App.css                v0.0.1  [Original]
+frontend/src/App.css                v0.0.8  [Modified]
 
 SCRIPT FILES
 ============
@@ -70,6 +70,16 @@ GITHUB_SETUP.md                     v0.0.1  [Original]
 ================================
 VERSION HISTORY
 ================================
+
+v0.0.8 (10 Aralik 2025)
+  - Added visible field markers while selecting template fields
+  - Fixed report preview PDF rendering and removed redundant reload
+  - Updated frontend: App.jsx, App.css
+
+v0.0.7 (10 Aralik 2025)
+  - Fixed FormData header so PDF template uploads include file
+  - Switched frontend PDF preview to embedded viewer with admin click overlay
+  - Updated frontend: App.jsx, App.css
 
 v0.0.6 (10 Aralık 2025)
   - Implemented centralized VERSION file for version tracking
