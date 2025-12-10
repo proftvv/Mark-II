@@ -50,7 +50,7 @@ echo ========================================
 cd /d %ROOT%
 git add -A
 git commit -m "Auto-update from run-all.bat - %datetime%"
-git push origin Mark-2
+git push origin main
 
 endlocal
 

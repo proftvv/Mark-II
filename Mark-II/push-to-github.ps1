@@ -27,10 +27,10 @@ if ($LASTEXITCODE -ne 0) {
   exit 0
 }
 
-# Push to Mark-2 branch
-git push origin Mark-2
+# Push to main branch
+git push origin main
 if ($LASTEXITCODE -eq 0) {
-  Write-Host "✅ Successfully pushed to GitHub (Mark-2 branch)!" -ForegroundColor Green
+  Write-Host "✅ Successfully pushed to GitHub (main branch)!" -ForegroundColor Green
 } else {
   Write-Host "❌ Push failed" -ForegroundColor Red
   Pop-Location
