@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "username": "proftvv",
+    "password_hash": "$2a$10$pvFTwD2QLm9FzwZkSJWruOp0dUfQhDZM3sLLs1u2bteH4ETDe3MCG"
+  },
+  {
+    "id": 2,
+    "username": "test",
+    "password_hash": "$2a$10$GPMgHNP8mN.3PiN9pCeGG.7l93ZNXsUKMKBB8GQ.vsXH9uqT28vNK"
+  }
+]

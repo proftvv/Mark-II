@@ -10,16 +10,6 @@ env
 logs/
 *.log
 
-# Data files
-users.json
-templates.json
-reports.json
-doc-counters.json
-
-# Build outputs
-frontend/dist/
-frontend/build/
-
 # IDE
 .vscode/
 .idea/
@@ -29,4 +19,8 @@ frontend/build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Sadece Mark-II klasörü takip edilir
+# Root'taki diğer dosyalar push'lanmaz
+
 

@@ -3,7 +3,8 @@ setlocal enabledelayedexpansion
 
 REM Proje kok dizini
 set ROOT=%~dp0
-set LOG_DIR=%ROOT%logs
+set MARK_II=%ROOT%Mark-II
+set LOG_DIR=%MARK_II%\logs
 set LOG_SUBDIR=%LOG_DIR%\log
 set ERROR_SUBDIR=%LOG_DIR%\error
 
@@ -24,8 +25,8 @@ echo Hata Logu: %ERROR_LOG%
 echo ========================================
 echo.
 
-REM Ana dizine gec
-cd /d %ROOT%
+REM Mark-II dizinine gec
+cd /d %MARK_II%
 
 REM Port kontrolu - 3000 portu kullaniliyorsa uyari ver
 powershell -NoProfile -Command "$port = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue; if ($port) { Write-Host 'UYARI: Port 3000 zaten kullaniliyor! Lutfen eski servisi kapatin veya farkli bir port kullanin.' -ForegroundColor Yellow }"
@@ -40,6 +41,16 @@ if errorlevel 1 (
     echo HATA: Servisler baslatilamadi. Hata logunu kontrol edin: %ERROR_LOG%
     pause
 )
+
+REM Git otomatik push (opsiyonel - servis kapaninca devreye girer)
+echo.
+echo ========================================
+echo GitHub'a otomatik yükleme baslatiliyor...
+echo ========================================
+cd /d %ROOT%
+git add -A
+git commit -m "Auto-update from run-all.bat - %datetime%"
+git push origin Mark-2
 
 endlocal
 
