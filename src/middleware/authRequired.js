@@ -1,4 +1,4 @@
-// v0.0.4
+// v0.0.5
 function authRequired(req, res, next) {
   if (req.session && req.session.user) {
     return next();

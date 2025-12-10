@@ -1,8 +1,8 @@
 @echo off
-REM v0.0.4
+REM v0.0.5
 REM Report Mark-II Başlatma Script'i
-REM Bu script Mark-II klasöründeki run-all.bat'ı çalıştırır
+REM Backend ve Frontend'i concurrent olarak çalıştırır
 
-cd /d %~dp0Mark-II
-call run-all.bat
+cd /d %~dp0
+npm run start:all
 
