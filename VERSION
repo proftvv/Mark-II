@@ -2,7 +2,7 @@
 MARK-II PROJECT VERSION TRACKING
 ================================
 
-PROJECT VERSION: 0.0.10
+PROJECT VERSION: 0.1.10
 LAST UPDATE: 11 Aralık 2025
 
 ================================
@@ -77,7 +77,7 @@ GITHUB_SETUP.md                     v0.0.1  [Original]
 VERSION HISTORY
 ================================
 
-v0.0.10 (11 Aralik 2025)
+v0.1.10 (11 Aralik 2025)
   - Full migration to MySQL Database
   - Updated auth, templates, reports routes
   - Fixed .env issues
