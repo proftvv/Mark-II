@@ -2,7 +2,7 @@
 MARK-II PROJECT VERSION TRACKING
 ================================
 
-PROJECT VERSION: 0.1.10
+PROJECT VERSION: 0.1.11
 LAST UPDATE: 11 Aralık 2025
 
 ================================
@@ -30,6 +30,7 @@ src/routes/reports.js               v0.0.10 [Modified]
 SERVICES (src/services/)
 ========================
 src/services/pdfService.js          v0.0.6  [Modified]
+src/services/logger.js              v0.1.11 [New]
 
 UTILS (src/utils/)
 ==================
@@ -37,10 +38,10 @@ src/utils/docNumber.js              v0.0.6  [Modified]
 
 FRONTEND FILES (frontend/src/)
 ==============================
-frontend/src/App.jsx                v0.0.8  [Modified]
+frontend/src/App.jsx                v0.1.11 [Modified]
 frontend/src/main.jsx               v0.0.1  [Original]
 frontend/src/index.css              v0.0.1  [Original]
-frontend/src/App.css                v0.0.8  [Modified]
+frontend/src/App.css                v0.1.11 [Modified]
 
 SCRIPT FILES
 ============
@@ -72,12 +73,21 @@ DOCUMENTATION
 ==============
 README.md                           v0.0.2  [Original]
 GITHUB_SETUP.md                     v0.0.1  [Original]
+PROJECT_ANALYSIS.md                 v0.1.11 [Modified]
 
 ================================
 VERSION HISTORY
 ================================
 
+v0.1.11 (11 Aralik 2025)
+  - Added drag-and-select field definition
+  - Removed Customer ID input
+  - Added logging service
+  - Fixed blank screen crash on template select
+  - Updated documentation
+
 v0.1.10 (11 Aralik 2025)
+
   - Full migration to MySQL Database
   - Updated auth, templates, reports routes
   - Fixed .env issues

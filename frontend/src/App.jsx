@@ -10,6 +10,7 @@ function App() {
     return saved ? JSON.parse(saved) : false;
   });
   const [status, setStatus] = useState('');
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 }); // Indicator icin
   const [templates, setTemplates] = useState([]);
   const [reports, setReports] = useState([]);
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
@@ -110,7 +111,7 @@ function App() {
   }
 
   async function handleLogout() {
-    await apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
+    await apiFetch('/auth/logout', { method: 'POST' }).catch(() => { });
     setUser(null);
     setTemplates([]);
     setReports([]);
@@ -137,12 +138,21 @@ function App() {
   async function loadTemplatePreview(templateId) {
     try {
       const template = await apiFetch(`/templates/${templateId}`, { method: 'GET' });
+      let fieldMap = template.field_map_json;
+      if (typeof fieldMap === 'string') {
+        try { fieldMap = JSON.parse(fieldMap); } catch { fieldMap = []; }
+      }
+      if (!Array.isArray(fieldMap)) fieldMap = [];
+
+      // Update template object with parsed map to prevent render errors
+      template.field_map_json = fieldMap;
       setSelectedTemplate(template);
+
       const fileUrl = `${API_BASE}/files/templates/${template.file_path}`;
       setReportPreview(fileUrl);
       setReportForm(prev => ({
         ...prev,
-        fieldData: (template.field_map_json || []).reduce((acc, field) => {
+        fieldData: fieldMap.reduce((acc, field) => {
           acc[field.key] = '';
           return acc;
         }, {})
@@ -152,11 +162,51 @@ function App() {
     }
   }
 
-  function handlePdfClick(e, isTemplate = false) {
-    if (!isTemplate || user?.username !== 'proftvv') return;
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const [dragCurrent, setDragCurrent] = useState(null);
+
+  function handleMouseDown(e) {
+    if (!user?.username === 'proftvv') return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const y = rect.height - (e.clientY - rect.top);
+    const y = e.clientY - rect.top;
+    setIsDragging(true);
+    setDragStart({ x, y });
+    setDragCurrent({ x, y });
+  }
+
+  function handleMouseMove(e) {
+    if (!user?.username === 'proftvv') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMousePos({ x, y });
+
+    if (isDragging) {
+      setDragCurrent({ x, y });
+    }
+  }
+
+  function handleMouseUp(e) {
+    if (!isDragging || !dragStart) return;
+    setIsDragging(false);
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const endX = e.clientX - rect.left;
+    const endY = e.clientY - rect.top;
+
+    // Calculate box (for visual or data if needed)
+    // We stick to a point for now but we could use the box center or top-left
+    // For now, let's use the mouse UP position as the target point, 
+    // OR the center of the selection. 
+    // To match user's "screenshot" mental model, let's use the selection to determine position.
+    // If it's a tiny click, endX~startX.
+
+    // Let's use the center of the drag box as the field center
+    const x = (dragStart.x + endX) / 2;
+    const y = rect.height - ((dragStart.y + endY) / 2); // PDF coordinates are bottom-up
+
     const key = prompt('Alan adı (key):');
     if (key) {
       const newField = {
@@ -172,6 +222,8 @@ function App() {
         fieldMapJson: JSON.stringify([...selectedFields, newField], null, 2)
       }));
     }
+    setDragStart(null);
+    setDragCurrent(null);
   }
 
   async function handleTemplateUpload(e) {
@@ -354,11 +406,39 @@ function App() {
                           {renderFieldDots(selectedFields)}
                         </div>
                         {isAdmin && (
-                          <div
-                            className="pdf-click-overlay"
-                            onClick={(e) => handlePdfClick(e, true)}
-                            title="Tiklayarak alan ekleyin"
-                          />
+                          <>
+                            <div
+                              className="pdf-click-overlay"
+                              onMouseDown={handleMouseDown}
+                              onMouseMove={handleMouseMove}
+                              onMouseUp={handleMouseUp}
+                              onMouseLeave={() => {
+                                setMousePos({ x: -1, y: -1 });
+                                setIsDragging(false);
+                                setDragStart(null);
+                              }}
+                              title="Tıklayıp sürükleyerek alan seçin"
+                            />
+                            {/* Guide Lines (Crosshair) */}
+                            {mousePos.x > 0 && mousePos.y > 0 && !isDragging && (
+                              <>
+                                <div className="guide-line-x" style={{ top: mousePos.y }}></div>
+                                <div className="guide-line-y" style={{ left: mousePos.x }}></div>
+                              </>
+                            )}
+                            {/* Selection Drag Box */}
+                            {isDragging && dragStart && dragCurrent && (
+                              <div
+                                className="selection-box"
+                                style={{
+                                  left: Math.min(dragStart.x, dragCurrent.x),
+                                  top: Math.min(dragStart.y, dragCurrent.y),
+                                  width: Math.abs(dragCurrent.x - dragStart.x),
+                                  height: Math.abs(dragCurrent.y - dragStart.y)
+                                }}
+                              ></div>
+                            )}
+                          </>
                         )}
                       </div>
                       <div className="field-list">
@@ -426,13 +506,7 @@ function App() {
                   ))}
                 </select>
               </label>
-              <label>
-                Müşteri ID (opsiyonel)
-                <input
-                  value={reportForm.customerId}
-                  onChange={(e) => setReportForm({ ...reportForm, customerId: e.target.value })}
-                />
-              </label>
+
               {selectedTemplate && reportPreview && (
                 <div className="pdf-preview-container">
                   <h3>PDF önizleme - Alanları doldurun</h3>
@@ -445,12 +519,13 @@ function App() {
                       <p>PDF görüntülenemedi. <a href={reportPreview} target="_blank" rel="noreferrer">Yeni sekmede aç</a></p>
                     </object>
                     <div className="pdf-dots">
-                      {renderFieldDots(selectedTemplate.field_map_json)}
+                      {renderFieldDots(selectedTemplate.field_map_json || [])}
                     </div>
                   </div>
                   <div className="field-form">
                     <h4>Alanları Doldur:</h4>
-                    {selectedTemplate.field_map_json.map((field) => (
+                    {/* Ensure field_map_json is an array and map it */}
+                    {(Array.isArray(selectedTemplate.field_map_json) ? selectedTemplate.field_map_json : []).map((field) => (
                       <label key={field.key}>
                         {field.key}
                         <input
@@ -461,6 +536,9 @@ function App() {
                         />
                       </label>
                     ))}
+                    {(!selectedTemplate.field_map_json || selectedTemplate.field_map_json.length === 0) && (
+                      <div className="muted">Bu şablonda tanımlı alan yok.</div>
+                    )}
                   </div>
                 </div>
               )}

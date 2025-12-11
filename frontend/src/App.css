@@ -142,7 +142,9 @@ label {
   color: var(--text-primary);
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
@@ -153,7 +155,9 @@ input, select, textarea {
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--button-primary);
 }
@@ -173,7 +177,8 @@ button {
   transition: background 0.2s ease;
 }
 
-button.secondary, a.secondary {
+button.secondary,
+a.secondary {
   background: var(--button-secondary-bg);
   color: var(--button-secondary-text);
   border: 1px solid var(--button-secondary-border);
@@ -186,7 +191,8 @@ button:hover {
   background: var(--button-primary-hover);
 }
 
-button.secondary:hover, a.secondary:hover {
+button.secondary:hover,
+a.secondary:hover {
   background: var(--button-primary);
   color: white;
 }
@@ -279,14 +285,26 @@ button.secondary:hover, a.secondary:hover {
 .field-dot {
   position: absolute;
   transform: translate(-50%, 50%);
-  background: var(--button-primary);
+  background: rgba(0, 0, 255, 0.3);
+  /* Seffaf mavi */
   color: #fff;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   padding: 4px 8px;
-  border-radius: 12px;
+  border: 2px solid blue;
+  /* Cizgiler */
+  border-radius: 4px;
   font-size: 12px;
-  border: 1px solid #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  /* Tiklamayi engellemesin diye */
+  z-index: 10;
 }
 
 .pdf-click-overlay {
@@ -295,7 +313,8 @@ button.secondary:hover, a.secondary:hover {
   cursor: crosshair;
 }
 
-.field-list, .field-form {
+.field-list,
+.field-form {
   margin-top: 16px;
   padding: 12px;
   background: var(--card-bg);
@@ -303,7 +322,8 @@ button.secondary:hover, a.secondary:hover {
   border: 1px solid var(--border);
 }
 
-.field-list h4, .field-form h4 {
+.field-list h4,
+.field-form h4 {
   margin: 0 0 12px 0;
   color: var(--text-primary);
 }
@@ -325,4 +345,34 @@ button.secondary:hover, a.secondary:hover {
 
 .field-form input {
   margin-top: 4px;
+}
+
+.guide-line-x {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: red;
+  pointer-events: none;
+  z-index: 5;
+  border-top: 1px dashed rgba(255, 0, 0, 0.7);
+}
+
+.guide-line-y {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: red;
+  pointer-events: none;
+  z-index: 5;
+  border-left: 1px dashed rgba(255, 0, 0, 0.7);
+}
+
+.selection-box {
+  position: absolute;
+  border: 2px dashed red;
+  background: rgba(255, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: 20;
 }

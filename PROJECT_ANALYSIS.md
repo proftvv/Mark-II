@@ -4,7 +4,7 @@
 **MARK-II**: PDF rapor doldurma ve versiyonlama sistemi
 - **Amaç**: LAN üzerinde erişilebilen web arayüzüyle PDF şablonlarını doldurma ve raporları yönetme
 - **Stack**: Node.js + Express (Backend) | React + Vite (Frontend) | MySQL/MariaDB (Veritabanı)
-- **Sürüm**: v0.0.4
+- **Sürüm**: v0.1.10
 
 ---
 
@@ -13,19 +13,20 @@
 ### Backend (`src/`)
 ```
 src/
-├── app.js              # Express sunucusu (v0.0.4)
+├── app.js              # Express sunucusu
 ├── config.js           # Ortam değişkenleri ve yapılandırma
-├── db.js               # MySQL2 connection pool
+├── db.js               # MySQL2 connection pool (Aktif)
 ├── storage.js          # Dosya yönetimi ve klasör oluşturma
 ├── middleware/
 │   ├── authRequired.js # Oturum kontrol middleware
 │   └── adminOnly.js    # IP bazlı admin kontrol (localhost)
 ├── routes/
-│   ├── auth.js         # Kullanıcı giriş/çıkış (users.json'dan oku)
-│   ├── templates.js    # PDF şablonları (templates.json'da saklanır)
+│   ├── auth.js         # Kullanıcı giriş/çıkış (MySQL: users tablosu)
+│   ├── templates.js    # PDF şablonları (MySQL: templates tablosu)
 │   └── reports.js      # Rapor oluşturma ve versiyonlama
 ├── services/
 │   └── pdfService.js   # pdf-lib kullanarak PDF doldurma
+│   └── logger.js       # [NEW] File logger service
 └── utils/
     └── docNumber.js    # Otomatik belge numaralandırması (P-YYYYMMDD-XXXX)
 ```
@@ -34,7 +35,7 @@ src/
 ```
 frontend/
 ├── src/
-│   ├── App.jsx         # Ana bileşen (472 satır)
+│   ├── App.jsx         # Ana bileşen
 │   ├── App.css         # Tasarım (dark mode desteği)
 │   ├── main.jsx        # Entry point
 │   └── assets/         # Görseller
@@ -48,27 +49,28 @@ frontend/
 
 ### 1. **Kullanıcı Sistemi**
 - **Kimlik doğrulama**: BCrypt hash + Express-session
-- **Veri kaynağı**: `users.json` (JSON dosyası)
+- **Veri kaynağı**: MySQL Database (`users` tablosu)
 - **Roller**:
   - **proftvv** (Admin): Şablon ekleme/yönetimi
   - **Diğer kullanıcılar**: Rapor oluşturma
 
 ### 2. **Şablon Yönetimi**
-- **Depolama**: `templates.json` (metadata) + `STORAGE_ROOT/templates/` (PDF dosyaları)
+- **Depolama**: MySQL (`templates` tablosu) + `STORAGE_ROOT/templates/` (PDF dosyaları)
 - **Özellikleri**:
   - Alan haritası (field_map_json): Alan adı, sayfa, X/Y konumu, font boyutu
   - Açıklama ve oluşturma tarihi
   - Multer ile dosya yükleme
+  - **Alan Seçimi**: Sürükle-bırak (Drag-select) ile alan belirleme
 - **Endpoint**: `POST /templates`, `GET /templates`, `GET /templates/:id`
 
 ### 3. **Rapor Oluşturma**
-- **Depolama**: `reports.json` (metadata) + `STORAGE_ROOT/generated/` (PDF dosyaları)
+- **Depolama**: MySQL (`reports` tablosu) + `STORAGE_ROOT/generated/` (PDF dosyaları)
 - **Otomatik numaralandırma**:
   - Format: `P-YYYYMMDD-XXXX` (prefix-tarih-sıra)
-  - Sayaç: `doc-counters.json` (tarih bazlı sayıcı)
+  - Sayaç: MySQL (`doc_counters` tablosu)
 - **İş akışı**:
   1. Şablon seçimi
-  2. Alan verilerini doldurma
+  2. Dinamik alan formunun doldurulması (Müşteri ID kaldırıldı, sadece şablon alanları)
   3. PDF Service vasıtasıyla şablonu doldurma
   4. Raporu kaydetme
 - **Endpoint**: `POST /reports`, `GET /reports`, `GET /reports/:id`
@@ -87,7 +89,7 @@ APP_PORT=3000
 APP_HOST=0.0.0.0
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=2503
+DB_PASSWORD=xxxx
 DB_NAME=report_mark2
 STORAGE_ROOT=Z:\Report-Mark-II\raporlar
 SESSION_SECRET=change-me
@@ -99,13 +101,13 @@ ADMIN_IPS=127.0.0.1,::1
 
 ## 📁 Veri Depolama
 
-### JSON Dosyaları
-| Dosya | Amaç | Örnek İçerik |
-|-------|------|-------------|
-| `users.json` | Kullanıcı hesapları | `[{id, username, password_hash}]` |
-| `templates.json` | PDF şablonları metadata | `[{id, name, file_path, field_map_json, created_at}]` |
-| `reports.json` | Oluşturulmuş raporlar | `[{id, template_id, doc_number, file_path, created_at}]` |
-| `doc-counters.json` | Belge numarası sayaçları | `{"2025-12-10": 42}` |
+### Database (MySQL)
+| Tablo | Amaç |
+|-------|------|
+| `users` | Kullanıcı hesapları |
+| `templates` | PDF şablonları metadata |
+| `reports` | Oluşturulmuş raporlar |
+| `doc_counters` | Belge numarası sayaçları |
 
 ### Dosya Sistemi Yapısı
 ```
@@ -113,6 +115,7 @@ STORAGE_ROOT/
 ├── templates/        # PDF şablonları
 ├── generated/        # Oluşturulmuş raporlar
 └── uploads/          # Geçici yüklenen dosyalar
+logs/                 # [NEW] Uygulama logları
 ```
 
 ---
@@ -143,84 +146,22 @@ cd frontend && npm run dev   # Frontend (Vite, --host ile LAN erişimi)
 
 ## ⚠️ Bilinen Sorunlar & Notlar
 
-1. **Database**: Şu anda MySQL pool konfigürasyonu var ama `db.js`'de sadece test edilmiş, API'lerde kullanılmamış
-2. **JSON Depolama**: Veritabanı yerine JSON dosyası kullanılıyor (basit ama zayıf)
-3. **Hata Yönetimi**: Minimal error handling
-4. **Logging**: Console.log bazlı logging
-5. **Dosya Güvenliği**: Malicious PDF upload'ı için validasyon yok
+1. **Database**: MySQL migration tamamlandı (v0.1.10)
+2. **Logging**: Dosya tabanlı logging eklendi (`logs/app.log`)
+3. **Frontend**: Sürükle-bırak ile alan seçimi eklendi.
 
-6. **v0.0.8 guncellemesi**: Alan seciminde nokta/etiket gosterimi eklendi, rapor onizleme PDF yuklemesi iyilestirildi (frontend/App.jsx, App.css)
----
+## � Sürüm Tarihçesi
 
-## 📦 Teknoloji Bağımlılıkları
+- **v0.1.10 (11 Aralık 2025)**: MySQL Migration Tamamlandı.
+  - Backend tamamen veritabanına geçirildi.
+  - Sürükle-bırak alan seçimi eklendi.
+  - Loglama sistemi eklendi.
+  - Müşteri ID alanı kaldırıldı.
+  - Hatalar giderildi.
 
-### Backend
-- `express` (4.19.2) - Web framework
-- `mysql2` (3.11.0) - Database driver
-- `pdf-lib` (1.17.1) - PDF manipulation
-- `bcryptjs` (2.4.3) - Password hashing
-- `express-session` (1.18.0) - Session management
-- `multer` (1.4.5-lts.1) - File upload
-- `helmet` (7.1.0) - Security headers
-- `dotenv` (16.4.5) - Environment variables
-- `cors` (2.8.5) - CORS middleware
-
-### Frontend
-- `react` (18+) - UI library
-- `vite` - Build tool
-- CSS (dark mode desteği var)
+- **v0.0.9 (11 Aralık 2025)**: Test altyapısı ve DB scriptleri.
+- **v0.0.X**: Erken geliştirme aşamaları.
 
 ---
 
-## 📈 Versiyon Sistemi (Güncellenmiş)
-
-### Merkezi Versiyon Takibi
-- **Lokasyon**: `VERSION` dosyası (proje kök dizini)
-- **İçerik**: 
-  - Proje sürümü (PROJECT VERSION: 0.0.5)
-  - Tüm dosyaların sürüm takibi (STATUS ile)
-  - Sürüm tarihi
-
-### Sürüm Formatı
-```
-PROJECT VERSION: 0.0.5
-- Patch (0.0.x): Bug fixes, small improvements
-- Minor (0.1.x): New features
-- Major (1.0.0+): Breaking changes
-```
-
-### Dosya Sürümü Kuralı
-- **Sadece değişen dosyalara** // v0.0.X ekle
-- VERSION dosyasında merkezî takip yap
-- Dosya yorumunda version kalması isteğe bağlı
-
-### Changelog Dosyaları
-- **Lokasyon**: `Changelog/` klasörü
-- **Format**: `vX.Y.Z.txt` (plaintext dosyalar)
-
-### Mevcut Sürüm Tarihi
-- **v0.0.2**: README güncelleme, run-all.bat, versiyonlama sistemi
-- **v0.0.3**: Dosya yolu güncelleme (Z:\MARK-II), Changelog sistemi
-- **v0.0.4**: Proje yapısını düzleştirme (Flatten)
-- **v0.0.5**: run-all.bat hatasını düzeltme (Mark-II referansı kaldırıldı)
-
----
-
-## 📝 Çalışma Akışı (Güncellenmiş)
-
-Her prompt için:
-1. ✅ Değişiklikleri yap (kod, dosya, vb.)
-2. ✅ VERSION dosyasını güncelle (değişen dosyaları not et)
-3. ✅ Sadece değişen dosyalara `// v0.0.X` ekle
-4. ✅ Changelog/vX.Y.Z.txt dosyası oluştur
-5. ✅ Git commit & push yap
-
----
-
-## 🎯 Promptlara Hazır
-Merkezi VERSION sistemi aktif! Şimdi her promptta:
-- Proje sürümü VERSION dosyasında
-- Sadece değişen dosyaları version arttır
-- Changelog dosyası oluştur
-- Git push
 
