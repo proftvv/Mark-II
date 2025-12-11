@@ -2,8 +2,8 @@
 MARK-II PROJECT VERSION TRACKING
 ================================
 
-PROJECT VERSION: 0.0.8
-LAST UPDATE: 10 Aralık 2025
+PROJECT VERSION: 0.0.9
+LAST UPDATE: 11 Aralık 2025
 
 ================================
 FILE VERSION TRACKING
@@ -11,7 +11,7 @@ FILE VERSION TRACKING
 
 BACKEND FILES (src/)
 ===================
-src/app.js                          v0.0.6  [Modified]
+src/app.js                          v0.0.9  [Modified]
 src/config.js                       v0.0.6  [Modified]
 src/db.js                           v0.0.6  [Modified]
 src/storage.js                      v0.0.6  [Modified]
@@ -46,10 +46,16 @@ SCRIPT FILES
 ============
 run-all.bat                         v0.0.6  [Modified]
 push-to-github.ps1                  v0.0.6  [Modified]
+scripts/init-db.js                  v0.0.9  [New]
+scripts/migrate-data.js             v0.0.9  [New]
+
+TEST FILES
+==========
+tests/api.test.js                   v0.0.9  [New]
 
 CONFIGURATION FILES
 ===================
-package.json                        v1.0.0  [Config]
+package.json                        v0.0.9  [Modified]
 frontend/package.json               v1.0.0  [Config]
 env.example                         v0.0.3  [Config]
 vite.config.js                      v0.0.1  [Config]
@@ -71,6 +77,12 @@ GITHUB_SETUP.md                     v0.0.1  [Original]
 VERSION HISTORY
 ================================
 
+v0.0.9 (11 Aralik 2025)
+  - Added Testing Infrastructure (Jest, Supertest)
+  - Created Database Migration Scripts (init-db.js, migrate-data.js)
+  - Refactored app.js for better testing support
+  - Updated package.json
+  
 v0.0.8 (10 Aralik 2025)
   - Added visible field markers while selecting template fields
   - Fixed report preview PDF rendering and removed redundant reload

@@ -8,14 +8,14 @@ param(
 
 Write-Host "🚀 Pushing to GitHub..." -ForegroundColor Cyan
 
-# Ana dizine git
-Push-Location ..
+# Ana dizine git - Script is already in root
+# Push-Location ..
 
 # Git staging
 git add -A
 if ($LASTEXITCODE -ne 0) {
   Write-Host "❌ Git add failed" -ForegroundColor Red
-  Pop-Location
+  # Pop-Location
   exit 1
 }
 
@@ -23,7 +23,7 @@ if ($LASTEXITCODE -ne 0) {
 git commit -m $message
 if ($LASTEXITCODE -ne 0) {
   Write-Host "⚠️  No changes to commit" -ForegroundColor Yellow
-  Pop-Location
+  # Pop-Location
   exit 0
 }
 
@@ -33,8 +33,8 @@ if ($LASTEXITCODE -eq 0) {
   Write-Host "✅ Successfully pushed to GitHub (main branch)!" -ForegroundColor Green
 } else {
   Write-Host "❌ Push failed" -ForegroundColor Red
-  Pop-Location
+  # Pop-Location
   exit 1
 }
 
-Pop-Location
+# Pop-Location

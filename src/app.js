@@ -1,3 +1,4 @@
+// v0.0.9
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
@@ -12,7 +13,8 @@ const reportRoutes = require('./routes/reports');
 setupStorage();
 
 const app = express();
-app.use(helmet());
+// Allow PDF previews to be embedded from the frontend dev host
+app.use(helmet({ crossOriginResourcePolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -36,19 +38,22 @@ app.use('/files/templates', express.static(path.join(config.storageRoot, 'templa
 app.use('/files/generated', express.static(path.join(config.storageRoot, 'generated')));
 app.use('/files', express.static(config.storageRoot));
 
-const port = config.port;
-const server = app.listen(port, config.host, () => {
-  console.log(`Server running on http://${config.host}:${port}`);
-});
+if (require.main === module) {
+  const port = config.port;
+  const server = app.listen(port, config.host, () => {
+    console.log(`Server running on http://${config.host}:${port}`);
+  });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\nHATA: Port ${port} zaten kullaniliyor!`);
-    console.error(`Lutfen eski servisi kapatin veya .env dosyasinda APP_PORT degistirin.\n`);
-    process.exit(1);
-  } else {
-    console.error('Server hatasi:', err);
-    process.exit(1);
-  }
-});
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\nHATA: Port ${port} zaten kullaniliyor!`);
+      console.error(`Lutfen eski servisi kapatin veya .env dosyasinda APP_PORT degistirin.\n`);
+      process.exit(1);
+    } else {
+      console.error('Server hatasi:', err);
+      process.exit(1);
+    }
+  });
+}
 
+module.exports = app;

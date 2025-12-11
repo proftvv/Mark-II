@@ -62,7 +62,7 @@ function App() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Hata olustu');
+      throw new Error(err.error || 'Hata oluştu');
     }
     return res.json();
   }
@@ -341,14 +341,14 @@ function App() {
                   </label>
                   {templatePreview && (
                     <div className="pdf-preview-container">
-                      <h3>PDF onizleme - Tiklayarak alan ekleyin</h3>
+                      <h3>PDF önizleme - Tıklayarak alan ekleyin</h3>
                       <div className="pdf-frame">
                         <object
                           data={`${templatePreview}#toolbar=0`}
                           type="application/pdf"
                           className="pdf-embed"
                         >
-                          <p>PDF goruntulenemedi. <a href={templatePreview} target="_blank" rel="noreferrer">Yeni sekmede ac</a></p>
+                          <p>PDF görüntülenemedi. <a href={templatePreview} target="_blank" rel="noreferrer">Yeni sekmede aç</a></p>
                         </object>
                         <div className="pdf-dots">
                           {renderFieldDots(selectedFields)}
@@ -435,14 +435,14 @@ function App() {
               </label>
               {selectedTemplate && reportPreview && (
                 <div className="pdf-preview-container">
-                  <h3>PDF onizleme - Alanlari doldurun</h3>
+                  <h3>PDF önizleme - Alanları doldurun</h3>
                   <div className="pdf-frame">
                     <object
                       data={`${reportPreview}#toolbar=0`}
                       type="application/pdf"
                       className="pdf-embed"
                     >
-                      <p>PDF goruntulenemedi. <a href={reportPreview} target="_blank" rel="noreferrer">Yeni sekmede ac</a></p>
+                      <p>PDF görüntülenemedi. <a href={reportPreview} target="_blank" rel="noreferrer">Yeni sekmede aç</a></p>
                     </object>
                     <div className="pdf-dots">
                       {renderFieldDots(selectedTemplate.field_map_json)}
