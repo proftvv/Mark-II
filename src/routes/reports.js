@@ -1,6 +1,8 @@
 const express = require('express');
 const authRequired = require('../middleware/authRequired');
-const { adminOnly } = require('./auth'); // Import adminOnly middleware
+const adminOnly = require('../middleware/adminOnly');
+const { sendError } = require('../utils/errorCodes');
+const { logAdminAction } = require('../utils/roleValidation');
 const { fillPdfTemplate } = require('../services/pdfService');
 const { formatDocNumber } = require('../utils/docNumber');
 const { buildTemplatePath } = require('../storage');
@@ -26,8 +28,11 @@ async function reserveDocNumber() {
 router.post('/', authRequired, async (req, res) => {
   try {
     const { template_id, customer_id, field_data } = req.body;
-    if (!template_id || !field_data) {
-      return res.status(400).json({ error: 'template_id ve field_data gerekli' });
+    if (!template_id) {
+      return sendError(res, 'VALIDATION.MISSING_FIELD', { field: 'template_id' });
+    }
+    if (!field_data) {
+      return sendError(res, 'VALIDATION.MISSING_FIELD', { field: 'field_data' });
     }
 
     // Sablonu cek
@@ -35,7 +40,7 @@ router.post('/', authRequired, async (req, res) => {
     const template = tRows[0];
 
     if (!template) {
-      return res.status(404).json({ error: 'Sablon bulunamadi' });
+      return sendError(res, 'RESOURCE.TEMPLATE_NOT_FOUND');
     }
 
     // Use provided field_map (overrides) or template defaults
@@ -97,7 +102,7 @@ router.post('/', authRequired, async (req, res) => {
     return res.json({ id: result.insertId, doc_number: docNumber, file_path: pdfPath });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Rapor olusturulurken hata' });
+    return sendError(res, 'PDF.PROCESSING_ERROR');
   }
 });
 
@@ -107,18 +112,18 @@ router.get('/', authRequired, async (_req, res) => {
     return res.json(rows);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Listeleme hatasi' });
+    return sendError(res, 'DATABASE.QUERY_ERROR');
   }
 });
 
 router.get('/:id', authRequired, async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT * FROM reports WHERE id = ?', [req.params.id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Rapor bulunamadi' });
+    if (rows.length === 0) return sendError(res, 'RESOURCE.REPORT_NOT_FOUND');
     return res.json(rows[0]);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Sunucu hatasi' });
+    return sendError(res, 'DATABASE.QUERY_ERROR');
   }
 });
 
@@ -127,23 +132,19 @@ router.delete('/:id', authRequired, adminOnly, async (req, res) => {
 
     // Get report to find file path
     const [rows] = await pool.execute('SELECT * FROM reports WHERE id = ?', [req.params.id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Rapor bulunamadi' });
+    if (rows.length === 0) return sendError(res, 'RESOURCE.REPORT_NOT_FOUND');
 
     // Delete from DB
     await pool.execute('DELETE FROM reports WHERE id = ?', [req.params.id]);
 
-    // Note: We are keeping the file to avoid data loss, or we could delete it using fs.unlink
-    // Let's delete it for cleanliness, but wrap in try-catch in case file is missing
-    /*
-    try {
-       await fs.unlink(rows[0].file_path);
-    } catch { }
-    */
+    logAdminAction(req, 'REPORT_DELETED', { 
+      reportId: req.params.id
+    });
 
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Silme hatasi' });
+    return sendError(res, 'DATABASE.QUERY_ERROR');
   }
 });
 

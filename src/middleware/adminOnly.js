@@ -1,11 +1,15 @@
-const config = require('../config');
+const { sendError } = require('../utils/errorCodes');
+const { isLocalIp, logAdminAction } = require('../utils/roleValidation');
 
 function adminOnly(req, res, next) {
-  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
-  if (config.adminIps.includes(ip)) {
-    return next();
+  if (!isLocalIp(req)) {
+    logAdminAction(req, 'UNAUTHORIZED_IP_ACCESS', { 
+      endpoint: req.path,
+      method: req.method
+    });
+    return sendError(res, 'AUTHZ.IP_RESTRICTED');
   }
-  return res.status(403).json({ error: 'Bu islem sadece ana makineden yapilabilir' });
+  return next();
 }
 
 module.exports = adminOnly;
