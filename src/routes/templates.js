@@ -4,17 +4,14 @@ const path = require('path');
 const multer = require('multer');
 const { buildTemplatePath } = require('../storage');
 const authRequired = require('../middleware/authRequired');
+const { adminOnly } = require('./auth'); // Import adminOnly middleware
 const { pool } = require('../db');
 
 const upload = multer({ dest: 'temp_uploads/' });
 const router = express.Router();
 
-// Sablon ekleme - sadece proftvv kullanıcısı (veya admin)
-router.post('/', authRequired, upload.single('file'), async (req, res) => {
-  // TODO: Rol kontrolunu DB uzerinden yapmak daha iyi olur ama su anlik username check yeterli
-  if (req.session.user.username !== 'proftvv' && req.session.user.username !== 'admin') {
-    return res.status(403).json({ error: 'Sadece yetkili hesap şablon ekleyebilir' });
-  }
+// Sablon ekleme - Admin only
+router.post('/', authRequired, adminOnly, upload.single('file'), async (req, res) => {
 
   const { name, description, field_map_json } = req.body;
   if (!name || !req.file) {

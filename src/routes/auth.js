@@ -39,7 +39,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: '[L-001] Gecersiz bilgiler' });
     }
 
-    req.session.user = { id: user.id, username: user.username, custom_id: user.custom_id };
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      custom_id: user.custom_id,
+      role: user.role || 'user' // Include role in session
+    };
     return res.json({ user: req.session.user });
   } catch (err) {
     console.error('Login hatasi:', err);
@@ -58,4 +63,46 @@ router.get('/me', (req, res) => {
   return res.json({ user: req.session.user });
 });
 
+// ============================================
+// RBAC (Role-Based Access Control)
+// ============================================
+
+// RBAC Error Codes
+const RBAC_ERRORS = {
+  UNAUTHORIZED: '[A-001] Yetkisiz erişim',
+  ADMIN_ONLY: '[A-002] Bu işlem sadece admin kullanıcılar için',
+  INVALID_ROLE: '[A-003] Geçersiz kullanıcı rolü'
+};
+
+// Enhanced adminOnly middleware
+function adminOnly(req, res, next) {
+  if (!req.session?.user) {
+    console.warn('[RBAC] Unauthorized access attempt - No session');
+    return res.status(401).json({
+      error: RBAC_ERRORS.UNAUTHORIZED,
+      code: 'A-001'
+    });
+  }
+
+  if (req.session.user.role !== 'admin') {
+    console.warn(`[RBAC] Non-admin user ${req.session.user.username} (ID: ${req.session.user.id}) attempted admin action: ${req.method} ${req.path}`);
+    return res.status(403).json({
+      error: RBAC_ERRORS.ADMIN_ONLY,
+      code: 'A-002'
+    });
+  }
+
+  console.log(`[RBAC] Admin user ${req.session.user.username} accessing: ${req.method} ${req.path}`);
+  next();
+}
+
+// Role validation helper
+function hasRole(user, requiredRole) {
+  return user && user.role === requiredRole;
+}
+
+// Export router and RBAC utilities
 module.exports = router;
+module.exports.adminOnly = adminOnly;
+module.exports.hasRole = hasRole;
+module.exports.RBAC_ERRORS = RBAC_ERRORS;

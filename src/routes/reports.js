@@ -1,5 +1,6 @@
 const express = require('express');
 const authRequired = require('../middleware/authRequired');
+const { adminOnly } = require('./auth'); // Import adminOnly middleware
 const { fillPdfTemplate } = require('../services/pdfService');
 const { formatDocNumber } = require('../utils/docNumber');
 const { buildTemplatePath } = require('../storage');
@@ -121,12 +122,8 @@ router.get('/:id', authRequired, async (req, res) => {
   }
 });
 
-router.delete('/:id', authRequired, async (req, res) => {
+router.delete('/:id', authRequired, adminOnly, async (req, res) => {
   try {
-    // Only proftvv or admin can delete
-    if (req.session.user.username !== 'proftvv' && req.session.user.username !== 'admin') {
-      return res.status(403).json({ error: 'Yetkisiz islem' });
-    }
 
     // Get report to find file path
     const [rows] = await pool.execute('SELECT * FROM reports WHERE id = ?', [req.params.id]);
