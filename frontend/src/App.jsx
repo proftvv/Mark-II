@@ -75,8 +75,9 @@ function App() {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [filteredReports, setFilteredReports] = useState([]);
   const [lastCreatedReport, setLastCreatedReport] = useState(null);
-
-  useEffect(() => {
+  const [editingTemplate, setEditingTemplate] = useState(null); // { id, name, description, file_path, field_map_json }
+  const [editingFields, setEditingFields] = useState([]); // Düzenleme için seçilen alanlar
+  const [editingPreview, setEditingPreview] = useState(null); // Edit mod PDF preview
     document.documentElement.classList.toggle('dark', darkMode);
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
@@ -342,36 +343,15 @@ function App() {
     const currentY = e.clientY - rect.top;
 
     // Calculate box dimensions relative to PDF 595x842 coordinate system
-    // Using Math.min to ensure x/y are top-left
     const rawX = Math.min(dragStart.x, currentX);
     const rawY = Math.min(dragStart.y, currentY);
     const rawW = Math.abs(currentX - dragStart.x);
     const rawH = Math.abs(currentY - dragStart.y);
 
-    // Convert to PDF coordinates (PDF origin is usually bottom-left, but for simple overlay we often use top-left if the viewer matches. 
-    // However, pdf-lib usually uses bottom-left origin. 
-    // Let's assume standard PDF coordinates: x=left, y=bottom.
-    // The previous logic used `rect.height - (e.clientY - rect.top)` which implies bottom-up Y.
-    // If we want to draw a box, we need (x, y, w, h). 
-    // Let's store normalized values and handle rendering/pdf-generation accordingly.
-
-    // PDF Y is from bottom. So Top-Left of screen box is:
-    // Screen Y (from top) = rawY
-    // PDF Y (from bottom) = rect.height - rawY
-    // But since it's a box, we usually define it by bottom-left corner or top-left. 
-    // Let's stick to the previous point logic: x, y, size.
-    // BUT user complained about visual mismatch. 
-    // Let's save the BOX definition: x (left), y (bottom), w, h.
-
-    // PDF Coordinate (Bottom-Left of the box):
-    // x = rawX
-    // y = rect.height - (rawY + rawH) 
-
     const scaleX = 595 / rect.width;
     const scaleY = 842 / rect.height;
 
     const x = rawX * scaleX;
-    // PDF Y (bottom-left)
     const y = (rect.height - (rawY + rawH)) * scaleY;
     const w = rawW * scaleX;
     const h = rawH * scaleY;
@@ -388,17 +368,24 @@ function App() {
       const newField = {
         key,
         page: 0,
-        x, // Bottom-left X
-        y, // Bottom-left Y
-        w, // Width
-        h, // Height
+        x,
+        y,
+        w,
+        h,
         type: 'box'
       };
-      setSelectedFields([...selectedFields, newField]);
-      setTemplateForm(prev => ({
-        ...prev,
-        fieldMapJson: JSON.stringify([...selectedFields, newField], null, 2)
-      }));
+
+      // Edit modu kontrolü - editingTemplate varsa editingFields'a ekle
+      if (editingTemplate) {
+        setEditingFields([...editingFields, newField]);
+      } else {
+        // Normal modu - selectedFields'a ekle
+        setSelectedFields([...selectedFields, newField]);
+        setTemplateForm(prev => ({
+          ...prev,
+          fieldMapJson: JSON.stringify([...selectedFields, newField], null, 2)
+        }));
+      }
     }
     setDragStart(null);
     setDragCurrent(null);
@@ -544,9 +531,56 @@ function App() {
   }
 
   async function handleEditTemplate(id) {
-    // Edit modu aç - modal veya accordion açabilir
-    // Şimdilik alert ile uyarı
-    alert('Şablon düzenleme özelliği yakında eklenecektir');
+    // Edit modunu aç - mevcut şablon verilerini yükle
+    const template = templates.find(t => t.id === id);
+    if (!template) return;
+    
+    // Şablonun PDF dosyasını yükle
+    try {
+      const response = await fetch(`${API_BASE}/files/templates/${template.file_path}`, {
+        credentials: 'include'
+      });
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setEditingTemplate(template);
+        setEditingPreview(e.target.result);
+        // Mevcut alanları yükle
+        const fields = template.field_map_json ? JSON.parse(template.field_map_json) : [];
+        setEditingFields(fields.filter(f => f && typeof f.x === 'number'));
+      };
+      reader.readAsDataURL(blob);
+    } catch (err) {
+      setStatus(`❌ PDF yüklenemedi: ${err.message}`);
+    }
+  }
+
+  async function handleSaveEditedTemplate() {
+    if (!editingTemplate) return;
+    
+    setLoading(true);
+    try {
+      const updateData = {
+        name: editingTemplate.name,
+        description: editingTemplate.description,
+        field_map_json: JSON.stringify(editingFields)
+      };
+      
+      await apiFetch(`/templates/${editingTemplate.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateData)
+      });
+      
+      setStatus('✅ Şablon güncellendi');
+      setLoading(false);
+      setEditingTemplate(null);
+      setEditingFields([]);
+      setEditingPreview(null);
+      await loadTemplates();
+    } catch (err) {
+      setStatus(`❌ ${err.message}`);
+      setLoading(false);
+    }
   }
 
   async function handleDeleteTemplate(id) {
@@ -952,154 +986,259 @@ function App() {
             {/* Templates Tab - Admin Only */}
             {activeTab === 'templates' && (
               <section className="card">
-                <div className="section-head">
-                  <h2>Şablonlar Yönetimi</h2>
-                  <button onClick={loadTemplates} className="secondary">Yenile</button>
-                </div>
-
-                <div className="list">
-                  {templates.length === 0 && <div className="muted">Şablon yok</div>}
-                  {templates.map((t) => (
-                    <div key={t.id} className="list-item" style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
-                      gap: '10px'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <strong>{t.name}</strong>
-                        <div className="muted">{t.description}</div>
-                      </div>
-                      <div className="actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button
-                          className="secondary"
-                          onClick={() => {
-                            const newName = prompt('Yeni adı girin:', t.name);
-                            if (newName && newName.trim() !== t.name) {
-                              handleRenameTemplate(t.id, newName);
-                            }
-                          }}
-                          title="Yeniden Adlandır"
-                        >
-                          ✏️ Adını Değiştir
-                        </button>
-                        <button
-                          className="secondary"
-                          onClick={() => handleEditTemplate(t.id)}
-                          title="Düzenle"
-                        >
-                          🔧 Düzenle
-                        </button>
-                        <button
-                          className="danger"
-                          onClick={() => {
-                            if (confirm(`"${t.name}" şablonunu silmek istediğinize emin misiniz?`)) {
-                              handleDeleteTemplate(t.id);
-                            }
-                          }}
-                          title="Sil"
-                        >
-                          🗑️ Sil
-                        </button>
-                      </div>
+                {!editingTemplate ? (
+                  <>
+                    <div className="section-head">
+                      <h2>Şablonlar Yönetimi</h2>
+                      <button onClick={loadTemplates} className="secondary">Yenile</button>
                     </div>
-                  ))}
-                </div>
 
-                <details className="accordion" style={{ marginTop: '20px' }}>
-                  <summary>Yeni Şablon Ekle</summary>
-                  <form className="form-grid" onSubmit={handleTemplateUpload}>
-                    <label>
-                      Ad
-                      <input
-                        value={templateForm.name}
-                        onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                        required
-                      />
-                    </label>
-                    <label>
-                      Açıklama
-                      <input
-                        value={templateForm.description}
-                        onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
-                      />
-                    </label>
-                    <label>
-                      PDF Şablon
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e) => setTemplateFile(e.target.files?.[0] || null)}
-                        required
-                      />
-                    </label>
-                    {templatePreview && (
-                      <div className="pdf-preview-container">
-                        <h3>PDF önizleme - Tıklayarak alan ekleyin</h3>
-                        <PDFCanvas file={templatePreview}>
-                          <div className="pdf-dots">
-                            {renderFieldDots(selectedFields)}
+                    <div className="list">
+                      {templates.length === 0 && <div className="muted">Şablon yok</div>}
+                      {templates.map((t) => (
+                        <div key={t.id} className="list-item" style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <strong>{t.name}</strong>
+                            <div className="muted">{t.description}</div>
                           </div>
-                          <>
-                            <div
-                              className="pdf-click-overlay"
-                              onMouseDown={handleMouseDown}
-                              onMouseMove={handleMouseMove}
-                              onMouseUp={handleMouseUp}
-                              onMouseLeave={() => {
-                                setMousePos({ x: -1, y: -1 });
-                                setIsDragging(false);
-                                setDragStart(null);
+                          <div className="actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                            <button
+                              className="secondary"
+                              onClick={() => {
+                                const newName = prompt('Yeni adı girin:', t.name);
+                                if (newName && newName.trim() !== t.name) {
+                                  handleRenameTemplate(t.id, newName);
+                                }
                               }}
-                              title="Tıklayıp sürükleyerek alan seçin"
-                            />
-                            {/* Guide Lines (Crosshair) */}
-                            {mousePos.x > 0 && mousePos.y > 0 && !isDragging && (
-                              <>
-                                <div className="guide-line-x" style={{ top: mousePos.y }}></div>
-                                <div className="guide-line-y" style={{ left: mousePos.x }}></div>
-                              </>
-                            )}
-                            {/* Selection Drag Box */}
-                            {isDragging && dragStart && dragCurrent && (
-                              <div
-                                className="selection-box"
-                                style={{
-                                  left: Math.min(dragStart.x, dragCurrent.x),
-                                  top: Math.min(dragStart.y, dragCurrent.y),
-                                  width: Math.abs(dragCurrent.x - dragStart.x),
-                                  height: Math.abs(dragCurrent.y - dragStart.y)
-                                }}
-                              ></div>
-                            )}
-                          </>
-                        </PDFCanvas>
-                        <div className="field-list">
-                          <h4>Seçilen Alanlar:</h4>
-                          {selectedFields.map((field, idx) => (
-                            <div key={idx} className="field-item">
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <strong>{field.key}</strong>
-                                <button type="button" className="danger-sm" onClick={() => removeField(idx)}>Sil</button>
-                              </div>
-                            </div>
-                          ))}
+                              title="Yeniden Adlandır"
+                            >
+                              ✏️ Adını Değiştir
+                            </button>
+                            <button
+                              className="secondary"
+                              onClick={() => handleEditTemplate(t.id)}
+                              title="Düzenle"
+                            >
+                              🔧 Düzenle
+                            </button>
+                            <button
+                              className="danger"
+                              onClick={() => {
+                                if (confirm(`"${t.name}" şablonunu silmek istediğinize emin misiniz?`)) {
+                                  handleDeleteTemplate(t.id);
+                                }
+                              }}
+                              title="Sil"
+                            >
+                              🗑️ Sil
+                            </button>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+
+                    <details className="accordion" style={{ marginTop: '20px' }}>
+                      <summary>Yeni Şablon Ekle</summary>
+                      <form className="form-grid" onSubmit={handleTemplateUpload}>
+                        <label>
+                          Ad
+                          <input
+                            value={templateForm.name}
+                            onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Açıklama
+                          <input
+                            value={templateForm.description}
+                            onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                          />
+                        </label>
+                        <label>
+                          PDF Şablon
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) => setTemplateFile(e.target.files?.[0] || null)}
+                            required
+                          />
+                        </label>
+                        {templatePreview && (
+                          <div className="pdf-preview-container">
+                            <h3>PDF önizleme - Tıklayarak alan ekleyin</h3>
+                            <PDFCanvas file={templatePreview}>
+                              <div className="pdf-dots">
+                                {renderFieldDots(selectedFields)}
+                              </div>
+                              <>
+                                <div
+                                  className="pdf-click-overlay"
+                                  onMouseDown={handleMouseDown}
+                                  onMouseMove={handleMouseMove}
+                                  onMouseUp={handleMouseUp}
+                                  onMouseLeave={() => {
+                                    setMousePos({ x: -1, y: -1 });
+                                    setIsDragging(false);
+                                    setDragStart(null);
+                                  }}
+                                  title="Tıklayıp sürükleyerek alan seçin"
+                                />
+                                {/* Guide Lines (Crosshair) */}
+                                {mousePos.x > 0 && mousePos.y > 0 && !isDragging && (
+                                  <>
+                                    <div className="guide-line-x" style={{ top: mousePos.y }}></div>
+                                    <div className="guide-line-y" style={{ left: mousePos.x }}></div>
+                                  </>
+                                )}
+                                {/* Selection Drag Box */}
+                                {isDragging && dragStart && dragCurrent && (
+                                  <div
+                                    className="selection-box"
+                                    style={{
+                                      left: Math.min(dragStart.x, dragCurrent.x),
+                                      top: Math.min(dragStart.y, dragCurrent.y),
+                                      width: Math.abs(dragCurrent.x - dragStart.x),
+                                      height: Math.abs(dragCurrent.y - dragStart.y)
+                                    }}
+                                  ></div>
+                                )}
+                              </>
+                            </PDFCanvas>
+                            <div className="field-list">
+                              <h4>Seçilen Alanlar:</h4>
+                              {selectedFields.map((field, idx) => (
+                                <div key={idx} className="field-item">
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong>{field.key}</strong>
+                                    <button type="button" className="danger-sm" onClick={() => removeField(idx)}>Sil</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <label>
+                          field_map_json (otomatik doldurulur)
+                          <textarea
+                            rows={6}
+                            value={templateForm.fieldMapJson}
+                            onChange={(e) => setTemplateForm({ ...templateForm, fieldMapJson: e.target.value })}
+                          />
+                        </label>
+                        <button type="submit" disabled={loading}>
+                          {loading ? '⏳ Kaydediliyor...' : 'Şablonu kaydet'}
+                        </button>
+                      </form>
+                    </details>
+                  </>
+                ) : (
+                  <>
+                    {/* Edit Mode */}
+                    <div className="section-head">
+                      <h2>Şablonu Düzenle: {editingTemplate.name}</h2>
+                      <button onClick={() => setEditingTemplate(null)} className="secondary">Geri</button>
+                    </div>
+
+                    <form className="form-grid" onSubmit={(e) => { e.preventDefault(); handleSaveEditedTemplate(); }}>
+                      <label>
+                        Ad
+                        <input
+                          value={editingTemplate.name}
+                          onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                          required
+                        />
+                      </label>
+                      <label>
+                        Açıklama
+                        <input
+                          value={editingTemplate.description || ''}
+                          onChange={(e) => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
+                        />
+                      </label>
+
+                      {editingPreview && (
+                        <div className="pdf-preview-container">
+                          <h3>PDF - Alanları düzenleyin (tıklayıp sürükleyin)</h3>
+                          <PDFCanvas file={editingPreview}>
+                            <div className="pdf-dots">
+                              {renderFieldDots(editingFields)}
+                            </div>
+                            <>
+                              <div
+                                className="pdf-click-overlay"
+                                onMouseDown={handleMouseDown}
+                                onMouseMove={handleMouseMove}
+                                onMouseUp={handleMouseUp}
+                                onMouseLeave={() => {
+                                  setMousePos({ x: -1, y: -1 });
+                                  setIsDragging(false);
+                                  setDragStart(null);
+                                }}
+                                title="Tıklayıp sürükleyerek alan seçin"
+                              />
+                              {mousePos.x > 0 && mousePos.y > 0 && !isDragging && (
+                                <>
+                                  <div className="guide-line-x" style={{ top: mousePos.y }}></div>
+                                  <div className="guide-line-y" style={{ left: mousePos.x }}></div>
+                                </>
+                              )}
+                              {isDragging && dragStart && dragCurrent && (
+                                <div
+                                  className="selection-box"
+                                  style={{
+                                    left: Math.min(dragStart.x, dragCurrent.x),
+                                    top: Math.min(dragStart.y, dragCurrent.y),
+                                    width: Math.abs(dragCurrent.x - dragStart.x),
+                                    height: Math.abs(dragCurrent.y - dragStart.y)
+                                  }}
+                                ></div>
+                              )}
+                            </>
+                          </PDFCanvas>
+                          <div className="field-list">
+                            <h4>Alanlar ({editingFields.length}):</h4>
+                            {editingFields.length === 0 && <div className="muted">Alan yok - PDF üzerine tıklayarak ekleyin</div>}
+                            {editingFields.map((field, idx) => (
+                              <div key={idx} className="field-item">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <strong>{field.key}</strong>
+                                    <button 
+                                      type="button" 
+                                      className="danger-sm" 
+                                      onClick={() => setEditingFields(editingFields.filter((_, i) => i !== idx))}
+                                    >
+                                      Sil
+                                    </button>
+                                  </div>
+                                  <div className="muted" style={{ fontSize: '12px' }}>
+                                    Konum: ({field.x.toFixed(0)}, {field.y.toFixed(0)})
+                                    {field.w && field.h && ` | Boyut: {field.w.toFixed(0)} × {field.h.toFixed(0)}`}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                        <button type="submit" className="primary" disabled={loading}>
+                          {loading ? '⏳ Kaydediliyor...' : '✅ Değişiklikleri Kaydet'}
+                        </button>
+                        <button type="button" className="secondary" onClick={() => setEditingTemplate(null)} disabled={loading}>
+                          İptal
+                        </button>
                       </div>
-                    )}
-                    <label>
-                      field_map_json (otomatik doldurulur)
-                      <textarea
-                        rows={6}
-                        value={templateForm.fieldMapJson}
-                        onChange={(e) => setTemplateForm({ ...templateForm, fieldMapJson: e.target.value })}
-                      />
-                    </label>
-                    <button type="submit" disabled={loading}>
-                      {loading ? '⏳ Kaydediliyor...' : 'Şablonu kaydet'}
-                    </button>
-                  </form>
-                </details>
+                    </form>
+                  </>
+                )}
               </section>
             )}
           </>
