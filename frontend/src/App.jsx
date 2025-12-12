@@ -70,6 +70,9 @@ function App() {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [reportPreview, setReportPreview] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [filteredReports, setFilteredReports] = useState([]);
   const addLog = (msg) => setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 50));
 
   useEffect(() => {
@@ -228,9 +231,47 @@ function App() {
     try {
       const data = await apiFetch('/reports', { method: 'GET' });
       setReports(data);
+      setFilteredReports(data); // Initialize filtered reports
     } catch (err) {
       setStatus(`[R-001] ${err.message}`);
     }
+  }
+
+  // Filter reports based on search query and date range
+  useEffect(() => {
+    let filtered = [...reports];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(report =>
+        report.doc_number?.toLowerCase().includes(query) ||
+        String(report.customer_id || '').toLowerCase().includes(query) ||
+        String(report.template_id || '').toLowerCase().includes(query)
+      );
+    }
+
+    // Apply date range filter
+    if (dateRange.start) {
+      filtered = filtered.filter(report => {
+        const reportDate = new Date(report.created_at).toISOString().split('T')[0];
+        return reportDate >= dateRange.start;
+      });
+    }
+
+    if (dateRange.end) {
+      filtered = filtered.filter(report => {
+        const reportDate = new Date(report.created_at).toISOString().split('T')[0];
+        return reportDate <= dateRange.end;
+      });
+    }
+
+    setFilteredReports(filtered);
+  }, [reports, searchQuery, dateRange]);
+
+  function clearFilters() {
+    setSearchQuery('');
+    setDateRange({ start: '', end: '' });
   }
 
   async function loadTemplatePreview(templateId) {
@@ -501,7 +542,7 @@ function App() {
               {darkMode ? '☀️' : '🌙'}
             </button>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-              <span className="muted">v1.2.0</span>
+              <span className="muted">v1.2.1</span>
               <span className="muted" style={{ fontSize: '10px', color: '#2563eb' }}>Developed by Proftvv</span>
             </div>
             {user ? (
@@ -842,28 +883,68 @@ function App() {
                 )}
               </form>
 
+              {/* Search and Filter UI */}
+              <div className="reports-filters" style={{
+                display: 'flex',
+                gap: '10px',
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                alignItems: 'center'
+              }}>
+                <input
+                  type="text"
+                  placeholder="Rapor numarası, müşteri ID veya şablon ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ flex: '1', minWidth: '200px' }}
+                />
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                  title="Başlangıç Tarihi"
+                  style={{ minWidth: '150px' }}
+                />
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                  title="Bitiş Tarihi"
+                  style={{ minWidth: '150px' }}
+                />
+                <button onClick={clearFilters} className="secondary">Temizle</button>
+                <span className="muted" style={{ marginLeft: 'auto' }}>
+                  {filteredReports.length} rapor
+                </span>
+              </div>
+
               <div className="list">
-                {reports.length === 0 && <div className="muted">Rapor yok</div>}
-                {reports.map((r) => (
-                  <div key={r.id} className="list-item">
-                    <div>
-                      <strong>{r.doc_number}</strong>
-                      <div className="muted">Template #{r.template_id} | Customer {r.customer_id || '-'}</div>
-                    </div>
-                    <div className="actions">
-                      <a className="secondary" href={`${API_BASE}/files/generated/${r.doc_number}.pdf`} target="_blank" rel="noreferrer">PDF</a>
-                      {isAdmin && (
-                        <button
-                          className="danger"
-                          style={{ marginLeft: '8px', background: '#ef4444', border: '1px solid #b91c1c' }}
-                          onClick={() => handleDeleteReport(r.id)}
-                        >
-                          Sil
-                        </button>
-                      )}
-                    </div>
+                {filteredReports.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                    {reports.length === 0 ? 'Rapor yok' : 'Filtreye uygun rapor bulunamadı'}
                   </div>
-                ))}
+                ) : (
+                  filteredReports.map((r) => (
+                    <div key={r.id} className="list-item">
+                      <div>
+                        <strong>{r.doc_number}</strong>
+                        <div className="muted">Template #{r.template_id} | Customer {r.customer_id || '-'}</div>
+                      </div>
+                      <div className="actions">
+                        <a className="secondary" href={`${API_BASE}/files/generated/${r.doc_number}.pdf`} target="_blank" rel="noreferrer">PDF</a>
+                        {isAdmin && (
+                          <button
+                            className="danger"
+                            style={{ marginLeft: '8px', background: '#ef4444', border: '1px solid #b91c1c' }}
+                            onClick={() => handleDeleteReport(r.id)}
+                          >
+                            Sil
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
           </>
