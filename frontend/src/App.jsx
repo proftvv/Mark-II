@@ -69,17 +69,12 @@ function App() {
   });
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [reportPreview, setReportPreview] = useState(null);
-  const [logs, setLogs] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'archive', 'templates'
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [filteredReports, setFilteredReports] = useState([]);
-  const addLog = (msg) => setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 50));
 
   useEffect(() => {
-    addLog('App mounted. Version: v1.1.17');
-    window.onerror = (msg, source, lineno, colno, error) => {
-      addLog(`Global Error: ${msg} at ${lineno}:${colno}`);
-    };
     document.documentElement.classList.toggle('dark', darkMode);
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
@@ -553,14 +548,40 @@ function App() {
             ) : null}
           </div>
         </header>
-
-
-
-
-
-
-
-
+        {/* Tab Navigation */}
+        {user && (
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            padding: '10px 20px',
+            background: 'var(--card-bg)',
+            borderBottom: '1px solid var(--border)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 100
+          }}>
+            <button
+              className={activeTab === 'dashboard' ? 'primary' : 'secondary'}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              Ana Sayfa
+            </button>
+            <button
+              className={activeTab === 'archive' ? 'primary' : 'secondary'}
+              onClick={() => setActiveTab('archive')}
+            >
+              Arşiv
+            </button>
+            {isAdmin && (
+              <button
+                className={activeTab === 'templates' ? 'primary' : 'secondary'}
+                onClick={() => setActiveTab('templates')}
+              >
+                Şablonlar
+              </button>
+            )}
+          </div>
+        )}
         {!user && (
           <section className="card">
             <h2>Giriş</h2>
@@ -706,274 +727,263 @@ function App() {
               }
             </section >
 
-            <section className="card">
-              <div className="section-head">
-                <h2>Rapor oluştur</h2>
-                <button onClick={loadReports} className="secondary">Listeyi yenile</button>
-              </div>
-              <form className="form-grid" onSubmit={handleReportCreate}>
-                <label>
-                  Şablon
-                  <select
-                    value={reportForm.templateId}
-                    onChange={(e) => {
-                      const templateId = e.target.value;
-                      setReportForm({ ...reportForm, templateId, fieldData: {} });
-                      if (templateId) {
-                        loadTemplatePreview(parseInt(templateId));
-                      } else {
-                        setSelectedTemplate(null);
-                        setReportPreview(null);
-                      }
-                    }}
-                    required
-                  >
-                    <option value="">Seçin</option>
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                </label>
+            {/* Dashboard Tab - Report Creation */}
+            {activeTab === 'dashboard' && (
+              <section className="card">
+                <div className="section-head">
+                  <h2>Rapor oluştur</h2>
+                  <button onClick={loadReports} className="secondary">Listeyi yenile</button>
+                </div>
+                <form className="form-grid" onSubmit={handleReportCreate}>
+                  <label>
+                    Şablon
+                    <select
+                      value={reportForm.templateId}
+                      onChange={(e) => {
+                        const templateId = e.target.value;
+                        setReportForm({ ...reportForm, templateId, fieldData: {} });
+                        if (templateId) {
+                          loadTemplatePreview(parseInt(templateId));
+                        } else {
+                          setSelectedTemplate(null);
+                          setReportPreview(null);
+                        }
+                      }}
+                      required
+                    >
+                      <option value="">Seçin</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  Müşteri ID (opsiyonel)
+                  <label>
+                    Müşteri ID (opsiyonel)
+                    <input
+                      type="text"
+                      value={reportForm.customerId}
+                      onChange={(e) => setReportForm({ ...reportForm, customerId: e.target.value })}
+                      placeholder="Müşteri adı veya ID"
+                    />
+                  </label>
+
+                  {selectedTemplate && reportPreview && (
+                    <div className="pdf-preview-container">
+                      <h3>PDF önizleme - Alanları doldurun</h3>
+                      <PDFCanvas
+                        file={reportPreview}
+                        onLoadSuccess={(pdf) => addLog(`PDF Loaded successfully: ${pdf.numPages} pages`)}
+                        onLoadError={(err) => addLog(`PDF Load Error: ${err.message}`)}
+                      >
+                        <div className="pdf-dots">
+                          {renderFieldDots(reportFieldMap, reportForm.fieldData)}
+                        </div>
+                      </PDFCanvas>
+                      <div className="field-form">
+                        <h4>Alanları Doldur:</h4>
+                        {Array.isArray(reportFieldMap) && reportFieldMap.filter(f => f && typeof f.x === 'number').map((field, idx) => (
+                          <div key={idx} className="form-group" style={{ marginBottom: '16px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                            <label>
+                              {field.key}
+                              <span style={{ fontSize: '10px', color: '#999', marginLeft: '6px' }}>
+                                (x:{field.x.toFixed(0)}, y:{field.y.toFixed(0)})
+                              </span>
+                            </label>
+
+                            {/* Rich Text Toolbar for Report Mode */}
+                            <div className="field-toolbar">
+                              <div className="toolbar-row">
+                                <select
+                                  value={field.fontFamily || 'Helvetica'}
+                                  onChange={(e) => {
+                                    const newFields = [...reportFieldMap];
+                                    newFields[idx] = { ...newFields[idx], fontFamily: e.target.value };
+                                    setReportFieldMap(newFields);
+                                  }}
+                                  title="Yazı Tipi"
+                                >
+                                  <option value="Helvetica">Helvetica</option>
+                                  <option value="TimesRoman">Times New Roman</option>
+                                  <option value="Courier">Courier</option>
+                                </select>
+                                <input
+                                  type="number"
+                                  value={field.fontSize || 11}
+                                  onChange={(e) => {
+                                    const newFields = [...reportFieldMap];
+                                    newFields[idx] = { ...newFields[idx], fontSize: parseInt(e.target.value) || 11 };
+                                    setReportFieldMap(newFields);
+                                  }}
+                                  title="Punto"
+                                  style={{ width: '40px' }}
+                                />
+                                <input
+                                  type="color"
+                                  value={field.color || '#000000'}
+                                  onChange={(e) => {
+                                    const newFields = [...reportFieldMap];
+                                    newFields[idx] = { ...newFields[idx], color: e.target.value };
+                                    setReportFieldMap(newFields);
+                                  }}
+                                  title="Renk"
+                                  style={{ width: '24px', height: '24px', padding: 0, border: 'none' }}
+                                />
+                              </div>
+                              <div className="toolbar-row">
+                                <div className="btn-group">
+                                  <button type="button"
+                                    className={`tool-btn ${field.fontWeight === 'bold' ? 'active' : ''}`}
+                                    onClick={() => {
+                                      const newFields = [...reportFieldMap];
+                                      newFields[idx] = { ...newFields[idx], fontWeight: field.fontWeight === 'bold' ? 'normal' : 'bold' };
+                                      setReportFieldMap(newFields);
+                                    }}
+                                    title="Kalın"
+                                  >B</button>
+                                  <button type="button"
+                                    className={`tool-btn ${field.fontStyle === 'italic' ? 'active' : ''}`}
+                                    onClick={() => {
+                                      const newFields = [...reportFieldMap];
+                                      newFields[idx] = { ...newFields[idx], fontStyle: field.fontStyle === 'italic' ? 'normal' : 'italic' };
+                                      setReportFieldMap(newFields);
+                                    }}
+                                    title="İtalik"
+                                    style={{ fontStyle: 'italic' }}
+                                  >I</button>
+                                </div>
+                                <div className="btn-group">
+                                  <button type="button"
+                                    className={`tool-btn ${!field.textAlign || field.textAlign === 'left' ? 'active' : ''}`}
+                                    onClick={() => {
+                                      const newFields = [...reportFieldMap];
+                                      newFields[idx] = { ...newFields[idx], textAlign: 'left' };
+                                      setReportFieldMap(newFields);
+                                    }}
+                                    title="Sola Hizala"
+                                  >L</button>
+                                  <button type="button"
+                                    className={`tool-btn ${field.textAlign === 'center' ? 'active' : ''}`}
+                                    onClick={() => {
+                                      const newFields = [...reportFieldMap];
+                                      newFields[idx] = { ...newFields[idx], textAlign: 'center' };
+                                      setReportFieldMap(newFields);
+                                    }}
+                                    title="Ortala"
+                                  >C</button>
+                                  <button type="button"
+                                    className={`tool-btn ${field.textAlign === 'right' ? 'active' : ''}`}
+                                    onClick={() => {
+                                      const newFields = [...reportFieldMap];
+                                      newFields[idx] = { ...newFields[idx], textAlign: 'right' };
+                                      setReportFieldMap(newFields);
+                                    }}
+                                    title="Sağa Hizala"
+                                  >R</button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={reportForm.fieldData[field.key] || ''}
+                              onChange={(e) => setReportForm({
+                                ...reportForm,
+                                fieldData: {
+                                  ...reportForm.fieldData,
+                                  [field.key]: e.target.value
+                                }
+                              })}
+                              placeholder={`${field.key} değerini girin`}
+                              style={{ marginTop: '8px' }}
+                            />
+                          </div>
+                        ))}
+                        <button className="primary" onClick={handleReportCreate}>Rapor Üret</button>
+                      </div>
+                    </div>
+                  )}
+                </form>
+              </section>
+            )}
+
+            {/* Archive Tab - Reports List */}
+            {activeTab === 'archive' && (
+              <section className="card">
+                <div className="section-head">
+                  <h2>Arşiv</h2>
+                  <button onClick={loadReports} className="secondary">Yenile</button>
+                </div>
+
+                {/* Search and Filter UI */}
+                <div className="reports-filters" style={{
+                  display: 'flex',
+                  gap: '10px',
+                  marginBottom: '20px',
+                  flexWrap: 'wrap',
+                  alignItems: 'center'
+                }}>
                   <input
                     type="text"
-                    value={reportForm.customerId}
-                    onChange={(e) => setReportForm({ ...reportForm, customerId: e.target.value })}
-                    placeholder="Müşteri adı veya ID"
+                    placeholder="Rapor numarası, müşteri ID veya şablon ara..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ flex: '1', minWidth: '200px' }}
                   />
-                </label>
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                    title="Başlangıç Tarihi"
+                    style={{ minWidth: '150px' }}
+                  />
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                    title="Bitiş Tarihi"
+                    style={{ minWidth: '150px' }}
+                  />
+                  <button onClick={clearFilters} className="secondary">Temizle</button>
+                  <span className="muted" style={{ marginLeft: 'auto' }}>
+                    {filteredReports.length} rapor
+                  </span>
+                </div>
 
-                {selectedTemplate && reportPreview && (
-                  <div className="pdf-preview-container">
-                    <h3>PDF önizleme - Alanları doldurun</h3>
-                    <PDFCanvas
-                      file={reportPreview}
-                      onLoadSuccess={(pdf) => addLog(`PDF Loaded successfully: ${pdf.numPages} pages`)}
-                      onLoadError={(err) => addLog(`PDF Load Error: ${err.message}`)}
-                    >
-                      <div className="pdf-dots">
-                        {renderFieldDots(reportFieldMap, reportForm.fieldData)}
-                      </div>
-                    </PDFCanvas>
-                    <div className="field-form">
-                      <h4>Alanları Doldur:</h4>
-                      {Array.isArray(reportFieldMap) && reportFieldMap.filter(f => f && typeof f.x === 'number').map((field, idx) => (
-                        <div key={idx} className="form-group" style={{ marginBottom: '16px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                          <label>
-                            {field.key}
-                            <span style={{ fontSize: '10px', color: '#999', marginLeft: '6px' }}>
-                              (x:{field.x.toFixed(0)}, y:{field.y.toFixed(0)})
-                            </span>
-                          </label>
-
-                          {/* Rich Text Toolbar for Report Mode */}
-                          <div className="field-toolbar">
-                            <div className="toolbar-row">
-                              <select
-                                value={field.fontFamily || 'Helvetica'}
-                                onChange={(e) => {
-                                  const newFields = [...reportFieldMap];
-                                  newFields[idx] = { ...newFields[idx], fontFamily: e.target.value };
-                                  setReportFieldMap(newFields);
-                                }}
-                                title="Yazı Tipi"
-                              >
-                                <option value="Helvetica">Helvetica</option>
-                                <option value="TimesRoman">Times New Roman</option>
-                                <option value="Courier">Courier</option>
-                              </select>
-                              <input
-                                type="number"
-                                value={field.fontSize || 11}
-                                onChange={(e) => {
-                                  const newFields = [...reportFieldMap];
-                                  newFields[idx] = { ...newFields[idx], fontSize: parseInt(e.target.value) || 11 };
-                                  setReportFieldMap(newFields);
-                                }}
-                                title="Punto"
-                                style={{ width: '40px' }}
-                              />
-                              <input
-                                type="color"
-                                value={field.color || '#000000'}
-                                onChange={(e) => {
-                                  const newFields = [...reportFieldMap];
-                                  newFields[idx] = { ...newFields[idx], color: e.target.value };
-                                  setReportFieldMap(newFields);
-                                }}
-                                title="Renk"
-                                style={{ width: '24px', height: '24px', padding: 0, border: 'none' }}
-                              />
-                            </div>
-                            <div className="toolbar-row">
-                              <div className="btn-group">
-                                <button type="button"
-                                  className={`tool-btn ${field.fontWeight === 'bold' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    const newFields = [...reportFieldMap];
-                                    newFields[idx] = { ...newFields[idx], fontWeight: field.fontWeight === 'bold' ? 'normal' : 'bold' };
-                                    setReportFieldMap(newFields);
-                                  }}
-                                  title="Kalın"
-                                >B</button>
-                                <button type="button"
-                                  className={`tool-btn ${field.fontStyle === 'italic' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    const newFields = [...reportFieldMap];
-                                    newFields[idx] = { ...newFields[idx], fontStyle: field.fontStyle === 'italic' ? 'normal' : 'italic' };
-                                    setReportFieldMap(newFields);
-                                  }}
-                                  title="İtalik"
-                                  style={{ fontStyle: 'italic' }}
-                                >I</button>
-                              </div>
-                              <div className="btn-group">
-                                <button type="button"
-                                  className={`tool-btn ${!field.textAlign || field.textAlign === 'left' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    const newFields = [...reportFieldMap];
-                                    newFields[idx] = { ...newFields[idx], textAlign: 'left' };
-                                    setReportFieldMap(newFields);
-                                  }}
-                                  title="Sola Hizala"
-                                >L</button>
-                                <button type="button"
-                                  className={`tool-btn ${field.textAlign === 'center' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    const newFields = [...reportFieldMap];
-                                    newFields[idx] = { ...newFields[idx], textAlign: 'center' };
-                                    setReportFieldMap(newFields);
-                                  }}
-                                  title="Ortala"
-                                >C</button>
-                                <button type="button"
-                                  className={`tool-btn ${field.textAlign === 'right' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    const newFields = [...reportFieldMap];
-                                    newFields[idx] = { ...newFields[idx], textAlign: 'right' };
-                                    setReportFieldMap(newFields);
-                                  }}
-                                  title="Sağa Hizala"
-                                >R</button>
-                              </div>
-                            </div>
-                          </div>
-
-                          <input
-                            type="text"
-                            className="form-control"
-                            value={reportForm.fieldData[field.key] || ''}
-                            onChange={(e) => setReportForm({
-                              ...reportForm,
-                              fieldData: {
-                                ...reportForm.fieldData,
-                                [field.key]: e.target.value
-                              }
-                            })}
-                            placeholder={`${field.key} değerini girin`}
-                            style={{ marginTop: '8px' }}
-                          />
+                <div className="list">
+                  {filteredReports.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                      {reports.length === 0 ? 'Rapor yok' : 'Filtreye uygun rapor bulunamadı'}
+                    </div>
+                  ) : (
+                    filteredReports.map((r) => (
+                      <div key={r.id} className="list-item">
+                        <div>
+                          <strong>{r.doc_number}</strong>
+                          <div className="muted">Template #{r.template_id} | Customer {r.customer_id || '-'}</div>
                         </div>
-                      ))}
-                      <button className="primary" onClick={handleReportCreate}>Rapor Üret</button>
-                    </div>
-                  </div>
-                )}
-              </form>
-
-              {/* Search and Filter UI */}
-              <div className="reports-filters" style={{
-                display: 'flex',
-                gap: '10px',
-                marginBottom: '20px',
-                flexWrap: 'wrap',
-                alignItems: 'center'
-              }}>
-                <input
-                  type="text"
-                  placeholder="Rapor numarası, müşteri ID veya şablon ara..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ flex: '1', minWidth: '200px' }}
-                />
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  title="Başlangıç Tarihi"
-                  style={{ minWidth: '150px' }}
-                />
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  title="Bitiş Tarihi"
-                  style={{ minWidth: '150px' }}
-                />
-                <button onClick={clearFilters} className="secondary">Temizle</button>
-                <span className="muted" style={{ marginLeft: 'auto' }}>
-                  {filteredReports.length} rapor
-                </span>
-              </div>
-
-              <div className="list">
-                {filteredReports.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                    {reports.length === 0 ? 'Rapor yok' : 'Filtreye uygun rapor bulunamadı'}
-                  </div>
-                ) : (
-                  filteredReports.map((r) => (
-                    <div key={r.id} className="list-item">
-                      <div>
-                        <strong>{r.doc_number}</strong>
-                        <div className="muted">Template #{r.template_id} | Customer {r.customer_id || '-'}</div>
+                        <div className="actions">
+                          <a className="secondary" href={`${API_BASE}/files/generated/${r.doc_number}.pdf`} target="_blank" rel="noreferrer">PDF</a>
+                          {isAdmin && (
+                            <button
+                              className="danger"
+                              style={{ marginLeft: '8px', background: '#ef4444', border: '1px solid #b91c1c' }}
+                              onClick={() => handleDeleteReport(r.id)}
+                            >
+                              Sil
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="actions">
-                        <a className="secondary" href={`${API_BASE}/files/generated/${r.doc_number}.pdf`} target="_blank" rel="noreferrer">PDF</a>
-                        {isAdmin && (
-                          <button
-                            className="danger"
-                            style={{ marginLeft: '8px', background: '#ef4444', border: '1px solid #b91c1c' }}
-                            onClick={() => handleDeleteReport(r.id)}
-                          >
-                            Sil
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
+                    ))
+                  )}
+                </div>
+              </section>
+            )}
           </>
         )}
 
-        {status && <div className="status">{status}</div>}
-        {/* DEBUG CONSOLE */}
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '150px',
-          background: '#1e1e1e',
-          color: '#0f0',
-          fontFamily: 'monospace',
-          fontSize: '12px',
-          overflowY: 'auto',
-          padding: '10px',
-          borderTop: '2px solid #444',
-          zIndex: 9999,
-          opacity: 0.9
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <strong>System Debug Log</strong>
-            <button onClick={() => setLogs([])} style={{ padding: '2px 5px', fontSize: '10px' }}>Clear</button>
-          </div>
-          {logs.map((log, i) => <div key={i}>{log}</div>)}
-        </div>
       </div>
     </ErrorBoundary>
   );
