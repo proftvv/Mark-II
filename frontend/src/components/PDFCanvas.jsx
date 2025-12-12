@@ -17,7 +17,7 @@ function PDFCanvas({ file, children, onLoadSuccess, onLoadError }) {
         if (onLoadSuccess) onLoadSuccess({ numPages });
     }
 
-    // We only render Page 1 for field mapping for now
+    // Render ALL pages
     return (
         <div className="pdf-canvas-container" ref={containerRef} style={{ position: 'relative', width: '100%', minHeight: '400px' }}>
             <Document
@@ -27,27 +27,29 @@ function PDFCanvas({ file, children, onLoadSuccess, onLoadError }) {
                 error={<div>PDF yüklenemedi. <br /> <span style={{ fontSize: '10px', color: 'red' }}>{window.pdfError}</span></div>}
                 onLoadError={(error) => {
                     console.error('PDF Load Error:', error);
-                    // alert('PDF Hatası: ' + error.message);
-                    if (onLoadError) onLoadError(error); // Call parent handler if exists
+                    if (onLoadError) onLoadError(error);
                 }}
             >
-                <Page
-                    pageNumber={1}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    width={containerRef.current ? containerRef.current.clientWidth : null}
-                    onLoadSuccess={(page) => {
-                        setPageWidth(page.width);
-                    }}
-                />
+                {numPages && Array.from(new Array(numPages), (el, index) => (
+                    <div key={`page_${index + 1}`} style={{ position: 'relative', marginBottom: '20px' }}>
+                        <Page
+                            pageNumber={index + 1}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                            width={containerRef.current ? containerRef.current.clientWidth : null}
+                            onLoadSuccess={(page) => {
+                                if (index === 0) setPageWidth(page.width);
+                            }}
+                        />
+                        {/* Overlay for first page only (for field mapping) */}
+                        {index === 0 && pageWidth && (
+                            <div className="pdf-overlay" style={{ position: 'absolute', inset: 0 }}>
+                                {children}
+                            </div>
+                        )}
+                    </div>
+                ))}
             </Document>
-
-            {/* Overlay - Only show if page is loaded to avoid layout shifts affecting absolute pos */}
-            {pageWidth && (
-                <div className="pdf-overlay" style={{ position: 'absolute', inset: 0 }}>
-                    {children}
-                </div>
-            )}
         </div>
     );
 }
