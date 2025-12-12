@@ -59,13 +59,22 @@ router.post('/', authRequired, async (req, res) => {
       outputName
     });
 
-    // Parse customer_id: convert to integer or null
+    // Parse and validate customer_id
     // Frontend sends it as a string, but DB expects INT or NULL
+    // IMPORTANT: customer_id has a foreign key constraint to customers.id
     let parsedCustomerId = null;
     if (customer_id && customer_id.trim() !== '') {
       const parsed = parseInt(customer_id, 10);
       if (!isNaN(parsed)) {
-        parsedCustomerId = parsed;
+        // Check if this customer_id exists in customers table
+        const [customerRows] = await pool.execute('SELECT id FROM customers WHERE id = ?', [parsed]);
+        if (customerRows.length > 0) {
+          parsedCustomerId = parsed;
+        } else {
+          console.warn(`Customer ID ${parsed} not found in customers table, setting to NULL`);
+          // If customer doesn't exist, we set to NULL instead of failing
+          // Alternative: You could create the customer automatically, or return an error
+        }
       }
       // If it's a non-numeric string, we'll store it as null
     }

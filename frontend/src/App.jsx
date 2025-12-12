@@ -53,7 +53,7 @@ function App() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 }); // Indicator icin
   const [templates, setTemplates] = useState([]);
   const [reports, setReports] = useState([]);
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginForm, setLoginForm] = useState({ identifier: '', password: '' });
   const [templateForm, setTemplateForm] = useState({
     name: '',
     description: '',
@@ -501,7 +501,7 @@ function App() {
               {darkMode ? '☀️' : '🌙'}
             </button>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-              <span className="muted">v1.1.18</span>
+              <span className="muted">v1.2.0</span>
               <span className="muted" style={{ fontSize: '10px', color: '#2563eb' }}>Developed by Proftvv</span>
             </div>
             {user ? (
@@ -525,11 +525,12 @@ function App() {
             <h2>Giriş</h2>
             <form className="form-grid" onSubmit={handleLogin}>
               <label>
-                Kullanıcı adı
+                Kullanıcı Adı veya ID
                 <input
-                  value={loginForm.username}
-                  onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                  value={loginForm.identifier}
+                  onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })}
                   required
+                  placeholder="Kullanıcı adı veya ID giriniz"
                 />
               </label>
               <label>

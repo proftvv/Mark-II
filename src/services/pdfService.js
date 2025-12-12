@@ -64,22 +64,35 @@ async function fillPdfTemplate({ templatePath, fieldData, fieldMap, docNumber, o
     const color = hexToRgb(field.color || '#000000');
 
     let x = field.x;
-    const y = field.y; // y is now const and not modified by box logic
+    let y = field.y;
     const textAlign = field.textAlign || 'left';
 
     // Calculate text width for alignment
     const textWidth = selectedFont.widthOfTextAtSize(value, size);
 
-    if (textAlign === 'center') {
-      const boxWidth = field.w || 100; // Use a default boxWidth if not provided
-      x = field.x + (boxWidth / 2) - (textWidth / 2);
-    } else if (textAlign === 'right') {
-      const boxWidth = field.w || 100; // Use a default boxWidth if not provided
-      x = field.x + boxWidth - textWidth;
+    // If field has box dimensions (w and h), apply vertical centering and horizontal alignment
+    if (field.w && field.h) {
+      // Vertical centering: place text in the middle of the box height
+      // PDF Y is from bottom, so we add half the box height and subtract half the text height (approximated by size/4)
+      y = field.y + (field.h / 2) - (size / 4);
+
+      // Horizontal alignment
+      if (textAlign === 'center') {
+        x = field.x + (field.w - textWidth) / 2;
+      } else if (textAlign === 'right') {
+        x = field.x + field.w - textWidth - 2; // -2 for padding
+      } else {
+        // Left alignment with padding
+        x = field.x + 2;
+      }
     } else {
-      // Default to left alignment, potentially with padding if a box width is defined
-      if (field.w) {
-        x = field.x + 2; // Left with padding
+      // For non-box fields (legacy point-based), just apply horizontal alignment if specified
+      if (textAlign === 'center') {
+        const boxWidth = 100; // Default width for alignment calculation
+        x = field.x + (boxWidth / 2) - (textWidth / 2);
+      } else if (textAlign === 'right') {
+        const boxWidth = 100;
+        x = field.x + boxWidth - textWidth;
       }
     }
 

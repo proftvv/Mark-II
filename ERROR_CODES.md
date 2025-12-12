@@ -2,9 +2,11 @@
 
 Bu dosya, uygulamada kullanılan hata kodlarını ve anlamlarını listeler.
 
-## [L-xxxxx] Login & Auth Hataları
-*   `[L-001]`: Kullanıcı adı veya şifre hatalı.
-*   `[L-002]`: Oturum süresi dolmuş veya geçersiz.
+## [L-xxxxx] Login Errors (L-xxx)
+- **[L-001]**: Giriş başarısız / Geçersiz bilgiler (Invalid credentials)
+- **[L-002]**: Kullanıcı bulunamadı (User not found) - *Added in v1.2.0*
+- **[L-003]**: Birden fazla kullanıcı bulundu (Multiple users found - system error) - *Added in v1.2.0*
+- **[L-004]**: Oturum süresi dolmuş veya geçersiz.
 
 ## [D-xxxxx] Database Hataları
 *   `[D-001]`: Veritabanı bağlantı hatası.
