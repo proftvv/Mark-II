@@ -167,6 +167,20 @@ router.delete('/:id', authRequired, adminOnly, async (req, res) => {
     const template = rows[0];
     if (!template) return sendError(res, 'RESOURCE.TEMPLATE_NOT_FOUND');
 
+    // Bu şablonu kullanan rapor sayısını kontrol et
+    const [reportRows] = await pool.execute(
+      'SELECT COUNT(*) as count FROM reports WHERE template_id = ?',
+      [req.params.id]
+    );
+    const reportCount = reportRows[0].count;
+
+    if (reportCount > 0) {
+      return sendError(res, 'VALIDATION.TEMPLATE_IN_USE', {
+        message: `Bu şablon ${reportCount} rapor tarafından kullanılıyor. Önce bu raporları silin.`,
+        reportCount
+      });
+    }
+
     // PDF dosyasını sil
     const filePath = buildTemplatePath(template.file_path);
     await fs.unlink(filePath).catch(() => {});

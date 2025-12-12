@@ -68,6 +68,16 @@ const ERROR_CODES = {
       code: 'VAL_004',
       message: 'JSON formatı hatalı: {field}',
       status: 400
+    },
+    TEMPLATE_IN_USE: {
+      code: 'VAL_005',
+      message: 'Bu şablon hala rapor tarafından kullanılıyor.',
+      status: 400
+    },
+    NO_UPDATE_FIELDS: {
+      code: 'VAL_006',
+      message: 'Güncellemek için en az bir alan gerekli.',
+      status: 400
     }
   },
 
