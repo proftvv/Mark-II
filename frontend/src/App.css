@@ -191,6 +191,16 @@ button:hover {
   background: var(--button-primary-hover);
 }
 
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--button-primary);
+}
+
+button:disabled:hover {
+  background: var(--button-primary);
+}
+
 button.secondary:hover,
 a.secondary:hover {
   background: var(--button-primary);

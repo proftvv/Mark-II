@@ -50,6 +50,7 @@ function App() {
     return saved ? JSON.parse(saved) : false;
   });
   const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(false); // Global loading state
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 }); // Indicator icin
   const [templates, setTemplates] = useState([]);
   const [reports, setReports] = useState([]);
@@ -193,6 +194,7 @@ function App() {
 
   async function handleLogin(e) {
     e.preventDefault();
+    setLoading(true);
     setStatus('Giriş yapılıyor...');
     try {
       const data = await apiFetch('/auth/login', {
@@ -200,10 +202,12 @@ function App() {
         body: JSON.stringify(loginForm)
       });
       setUser(data.user);
-      setStatus('Giriş başarılı');
+      setStatus('✅ Giriş başarılı');
+      setLoading(false);
       await Promise.all([loadTemplates(), loadReports()]);
     } catch (err) {
-      setStatus(`[L-001] ${err.message}`);
+      setStatus(`❌ ${err.message}`);
+      setLoading(false);
     }
   }
 
@@ -439,18 +443,19 @@ function App() {
   async function handleTemplateUpload(e) {
     e.preventDefault();
     if (user?.username !== 'proftvv') {
-      setStatus('Sadece ana hesap şablon ekleyebilir');
+      setStatus('❌ Sadece ana hesap şablon ekleyebilir');
       return;
     }
     if (!templateForm.name || templateForm.name.trim() === '') {
-      setStatus('Şablon adı gerekli');
+      setStatus('❌ Şablon adı gerekli');
       return;
     }
     if (!templateFile) {
-      setStatus('PDF şablon dosyası seçin');
+      setStatus('❌ PDF şablon dosyası seçin');
       return;
     }
-    setStatus('Şablon yükleniyor...');
+    setLoading(true);
+    setStatus('⏳ Şablon yükleniyor...');
     try {
       const fd = new FormData();
       fd.append('file', templateFile);
@@ -458,14 +463,16 @@ function App() {
       fd.append('description', templateForm.description.trim());
       fd.append('field_map_json', templateForm.fieldMapJson);
       const response = await apiFetch('/templates', { method: 'POST', body: fd });
-      setStatus(`Şablon eklendi: ${templateForm.name}`);
+      setStatus(`✅ Şablon eklendi: ${templateForm.name}`);
       setTemplateForm({ name: '', description: '', fieldMapJson: '[]' });
       setTemplateFile(null);
       setTemplatePreview(null);
       setSelectedFields([]);
+      setLoading(false);
       await loadTemplates();
     } catch (err) {
-      setStatus(`Hata: ${err.message}`);
+      setStatus(`❌ Hata: ${err.message}`);
+      setLoading(false);
     }
   }
 
@@ -479,10 +486,11 @@ function App() {
   async function handleReportCreate(e) {
     e.preventDefault();
     if (!reportForm.templateId) {
-      setStatus('Şablon seçin');
+      setStatus('❌ Şablon seçin');
       return;
     }
-    setStatus('Rapor oluşturuluyor...');
+    setLoading(true);
+    setStatus('⏳ Rapor oluşturuluyor...');
     setLastCreatedReport(null); // Reset previous
     try {
       const data = await apiFetch('/reports', {
@@ -494,22 +502,27 @@ function App() {
           field_map: JSON.stringify(reportFieldMap) // Send overrides
         })
       });
-      setStatus(`Rapor oluşturuldu: ${data.doc_number}`);
+      setStatus(`✅ Rapor oluşturuldu: ${data.doc_number}`);
       setLastCreatedReport(data); // Store created report for success message
+      setLoading(false);
       await loadReports();
     } catch (err) {
-      setStatus(`[R-002] ${err.message}`);
+      setStatus(`❌ ${err.message}`);
+      setLoading(false);
     }
   }
 
   async function handleDeleteReport(id) {
     if (!confirm('Bu raporu silmek istediginizden emin misiniz?')) return;
+    setLoading(true);
     try {
       await apiFetch(`/reports/${id}`, { method: 'DELETE' });
-      setStatus('Rapor silindi');
+      setStatus('✅ Rapor silindi');
+      setLoading(false);
       await loadReports();
     } catch (err) {
-      setStatus(err.message);
+      setStatus(`❌ ${err.message}`);
+      setLoading(false);
     }
   }
 
@@ -599,7 +612,9 @@ function App() {
                   required
                 />
               </label>
-              <button type="submit">Giriş yap</button>
+              <button type="submit" disabled={loading}>
+                {loading ? '⏳ Giriş yapılıyor...' : 'Giriş yap'}
+              </button>
             </form>
           </section>
         )}
@@ -715,7 +730,9 @@ function App() {
                         onChange={(e) => setTemplateForm({ ...templateForm, fieldMapJson: e.target.value })}
                       />
                     </label>
-                    <button type="submit">Şablonu kaydet</button>
+                    <button type="submit" disabled={loading}>
+                      {loading ? '⏳ Kaydediliyor...' : 'Şablonu kaydet'}
+                    </button>
                   </form>
                 </details>
               )
@@ -893,7 +910,9 @@ function App() {
                             />
                           </div>
                         ))}
-                        <button className="primary" onClick={handleReportCreate}>Rapor Üret</button>
+                        <button className="primary" onClick={handleReportCreate} disabled={loading}>
+                          {loading ? '⏳ Oluşturuluyor...' : 'Rapor Üret'}
+                        </button>
 
                         {/* Success Message and PDF Open Button */}
                         {lastCreatedReport && (
