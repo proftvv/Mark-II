@@ -90,7 +90,7 @@ Mark-II/
 
 ## 🤝 İletişim
 
-**Geliştirici:** Proftvv (Agentic AI & Özcan Yılmazçelebi)
+**Geliştirici:** Proftvv ( Özcan Yılmazçelebi )
 **Repo:** [GitHub - ReportDisTicaret](https://github.com/proftvv/ReportDisTicaret)
 
 ---
