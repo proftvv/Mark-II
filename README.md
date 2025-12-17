@@ -84,7 +84,48 @@ Bu script otomatik olarak:
 
 **1. Gereksinimler:**
 - Node.js 18+ ([İndir](https://nodejs.org/))
-- My� Varsayılan Admin Girişi
+- MySQL 5.7+ veya MariaDB 10.5+
+
+**2. Bağımlılıkları Yükle:**
+```bash
+npm install
+cd frontend && npm install && cd ..
+```
+
+**3. Veritabanı Kurulumu:**
+```bash
+# MySQL/MariaDB'ye bağlan ve setup.sql'i çalıştır
+mysql -u root -p < sql/setup.sql
+```
+
+**4. Ortam Değişkenlerini Ayarla:**
+`.env` dosyasını düzenle:
+```env
+DB_HOST=localhost
+DB_USER=markii_db
+DB_PASSWORD=2503
+DB_NAME=markii_db
+APP_PORT=3000
+SESSION_SECRET=your-secret-key-here
+```
+
+**5. Sunucuları Başlat:**
+```bash
+# Backend (Terminal 1)
+node src/app.js
+
+# Frontend (Terminal 2)
+cd frontend && npm run dev
+```
+
+**Erişim:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- Proxy: Frontend otomatik olarak backend'e yönlendirir
+
+---
+
+## 🔑 Varsayılan Admin Girişi
 
 **Kullanıcı Adı:** `proftvv`  
 **Şifre:** `admin123`
@@ -113,30 +154,10 @@ Proje [Semantic Versioning](https://semver.org/) kullanır: **`MAJOR.MINOR.PATCH
 - `v0.0.x` - Initial development, database migration
 
 Detaylı değişiklik geçmişi için [VERSION](VERSION) dosyasına bakın.
-**3. Veritabanı Kurulumu:**
-```bash
-# MySQL/MariaDB'ye bağlan ve setup.sql'i çalıştır
-mysql -u root -p < sql/setup.sql
-```
 
-**4. Ortam Değişkenlerini Ayarla:**
-`.env` dosyasını düzenle:
-```env
-DB_HOST=localhost
-DB_USER=markii_db
-DB_PASSWORD=2503
-DB_NAME=markii_db
-APP_PORT=3000
-SESSION_SECRET=your-secret-key-here
-```
+---
 
-**5. Sunucuları Başlat:**
-```bash
-# Backend (Terminal 1)
-node src/app.js
-
-# Frontend (Terminal 2)
-cd froProje Yapısı
+## 📂 Proje Yapısı
 
 ```
 MARK-II/
@@ -155,7 +176,77 @@ MARK-II/
 │   │   └── main.jsx        # Entry point
 │   ├── vite.config.js      # Vite configuration
 │   └── package.json        # Frontend dependencies
-├──🔒 Güvenlik
+├── sql/                    # Database scripts
+│   ├── setup.sql           # Complete database setup (one-command)
+│   └── README.md           # SQL documentation
+├── scripts/                # Utility scripts
+│   ├── add-user.js         # Add new user
+│   └── fix-password.js     # Reset password
+├── logs/                   # Application logs
+├── temp_uploads/           # Temporary file storage
+├── migrations/             # Database migrations
+├── start.bat               # Windows startup script
+├── start.ps1               # PowerShell startup script
+├── .env                    # Environment variables (create from env.example)
+├── package.json            # Backend dependencies
+├── VERSION                 # Centralized version tracking
+└── README.md               # This file
+```
+
+---
+
+## 🔧 Geliştirme
+
+### Yeni Kullanıcı Ekleme
+```bash
+node scripts/add-user.js
+```
+
+### Şifre Sıfırlama
+```bash
+node scripts/fix-password.js
+```
+
+### Database Migration
+```bash
+mysql -u markii_db -p markii_db < migrations/XXX_migration_name.sql
+```
+
+### Logları İzleme
+```bash
+# PowerShell
+Get-Content logs/app.log -Tail 50 -Wait
+
+# CMD
+tail -f logs/app.log  # (Windows Git Bash)
+```
+
+---
+
+## 📊 Kullanım Senaryoları
+
+### 1️⃣ Admin: Yeni Şablon Ekleme
+1. "Şablonlar" sekmesine git
+2. PDF dosyasını yükle
+3. Sürükle-bırak ile veri alanlarını tanımla
+4. Şablonu kaydet
+
+### 2️⃣ Kullanıcı: Rapor Oluşturma
+1. "Ana Sayfa"da şablon seç
+2. Müşteri ID gir
+3. Form alanlarını doldur
+4. "Rapor Oluştur" butonuna tıkla
+5. PDF otomatik indirilir
+
+### 3️⃣ Arşivde Arama
+1. "Arşiv" sekmesine git
+2. Belge numarası veya müşteri ID ile ara
+3. Tarih aralığı filtrele
+4. İstediğin raporu indir veya sil (admin)
+
+---
+
+## 🔒 Güvenlik
 
 - ✅ **Bcrypt** şifreleme (10 salt rounds)
 - ✅ **Express Session** güvenli oturum yönetimi
@@ -236,96 +327,5 @@ Bu projeyi geliştirmede kullanılan açık kaynak kütüphanelere teşekkürler
 ---
 
 *"Mars Release - A New Foundation for Report Mark II"*  
-**v2.0.0-alpha** | Son Güncelleme: 17 Aralık 2025s
-├── temp_uploads/           # Temporary file storage
-├── migrations/             # Database migrations
-├── start.bat               # Windows startup script
-├── start.ps1               # PowerShell startup script
-├── .env                    # Environment variables (create from env.example)
-├── package.json            # Backend dependencies
-├── VERSION                 # Centralized version tracking
-└── README.md               # This file
-```
-
----
-
-## 🔧 Geliştirme
-
-### Yeni Kullanıcı Ekleme
-```bash
-node scripts/add-user.js
-```
-
-### Şifre Sıfırlama
-```bash
-node scripts/fix-password.js
-```
-
-### Database Migration
-```bash
-mysql -u markii_db -p markii_db < migrations/XXX_migration_name.sql
-```
-
-### Logları İzleme
-```bash
-# PowerShell
-Get-Content logs/app.log -Tail 50 -Wait
-
-# CMD
-tail -f logs/app.log  # (Windows Git Bash)
-```
-
----
-
-## 📊 Kullanım Senaryoları
-
-### 1️⃣ Admin: Yeni Şablon Ekleme
-1. "Şablonlar" sekmesine git
-2. PDF dosyasını yükle
-3. Sürükle-bırak ile veri alanlarını tanımla
-4. Şablonu kaydet
-
-### 2️⃣ Kullanıcı: Rapor Oluşturma
-1. "Ana Sayfa"da şablon seç
-2. Müşteri ID gir
-3. Form alanlarını doldur
-4. "Rapor Oluştur" butonuna tıkla
-5. PDF otomatik indirilir
-
-### 3️⃣ Arşivde Arama
-1. "Arşiv" sekmesine git
-2. Belge numarası veya müşteri ID ile ara
-3. Tarih aralığı filtrele
-4. İstediğin raporu indir veya sil (admin) **z (15)**: Bug Fixes (Hata Düzeltmeleri ve Küçük İyileştirmeler).
-
-**Mevcut Sürüm:** `v1.1.15`
-
----
-
-## 📂 Klasör Yapısı
-
-```
-Mark-II/
-├── src/              # Backend (API) Kodları
-│   ├── routes/       # API Rotaları (Auth, Reports, Templates)
-│   ├── services/     # Yardımcı Servisler (PDF, Logger)
-│   └── app.js        # Ana Sunucu Dosyası
-├── frontend/         # React Frontend Kodları
-│   ├── src/
-│   │   ├── App.jsx   # Ana Uygulama Mantığı
-│   │   └── App.css   # Stiller
-├── logs/             # Sistem Logları
-├── raporlar/         # Oluşturulan PDF'ler ve Şablonlar (Storage)
-└── sql/              # Veritabanı Kurulum Scriptleri
-```
-
----
-
-## 🤝 İletişim
-
-**Geliştirici:** Proftvv ( Özcan Yılmazçelebi )
-**Repo:** [GitHub - ReportDisTicaret](https://github.com/proftvv/ReportDisTicaret)
-
----
-*Developed by Report Dış Ticaret ve Lojistik*
+**v2.0.0-alpha** | Son Güncelleme: 17 Aralık 2025
 
