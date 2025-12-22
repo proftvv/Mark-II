@@ -35,18 +35,22 @@ if (usePostgres) {
     connectionTimeoutMillis: 10000,
   });
 
-  // MySQL-compatible execute function
+  // MySQL-compatible execute function wrapper
+  const originalPool = pool;
   pool.execute = async function(sql, params = []) {
+    console.log('[DB] PostgreSQL execute called:', { sql: sql.substring(0, 50), paramsCount: params.length });
+    
+    // Convert ? placeholders to $1, $2, etc.
     let paramIndex = 1;
     const pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
     
-    const client = await this.connect();
     try {
-      const result = await client.query(pgSql, params);
-      client.release();
+      const result = await originalPool.query(pgSql, params);
+      console.log('[DB] Query result:', { rowCount: result.rows.length });
+      // Return MySQL-compatible format: [rows, fields]
       return [result.rows, result.fields];
     } catch (err) {
-      client.release();
+      console.error('[DB] Query error:', err.message);
       throw err;
     }
   };
