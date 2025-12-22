@@ -1,0 +1,9 @@
+node_modules
+.git
+.env
+logs
+temp_uploads
+raporlar/generated
+raporlar/uploads
+*.log
+.DS_Store
