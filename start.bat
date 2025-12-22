@@ -39,16 +39,5 @@ echo.
 echo Press Ctrl+C to stop all servers
 echo.
 
-REM Start backend in new window
-start "Report Mark II - Backend" cmd /k "node src\app.js"
-
-REM Wait for backend to start
-timeout /t 2 /nobreak >nul
-
-REM Start frontend in new window
-start "Report Mark II - Frontend" cmd /k "cd frontend && npm run dev"
-
-echo.
-echo [SUCCESS] Servers started in separate windows
-echo.
-pause
+REM Start both servers in this window using concurrently
+npm run start:all

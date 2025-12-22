@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PDFCanvas from './components/PDFCanvas';
+import Users from './components/Users';
+import Logs from './components/Logs';
 import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
@@ -70,7 +72,7 @@ function App() {
   });
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [reportPreview, setReportPreview] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'archive', 'templates'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'archive', 'templates', 'users', 'logs'
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [filteredReports, setFilteredReports] = useState([]);
@@ -104,17 +106,55 @@ function App() {
       headers['Content-Type'] = 'application/json';
     }
 
-    const res = await fetch(`${API_BASE}${path}`, {
-      credentials: 'include',
+    const fullUrl = `${API_BASE}${path}`;
+    
+    // Debug logging
+    console.log(`[API] ${options.method || 'GET'} ${fullUrl}`, {
       headers,
-      ...options
+      body: options.body
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      // E-GEN-001: Genuine API Error
-      throw new Error(err.error || `[S-001] Sunucu hatası (${res.status})`);
+
+    try {
+      const res = await fetch(fullUrl, {
+        credentials: 'include',
+        headers,
+        ...options
+      });
+
+      // Debug response
+      const contentType = res.headers.get('content-type');
+      console.log(`[API] Response ${res.status} ${fullUrl}`, {
+        ok: res.ok,
+        status: res.status,
+        statusText: res.statusText,
+        contentType
+      });
+
+      // Check content-type for both success and error responses
+      if (!contentType || !contentType.includes('application/json')) {
+        const responseText = await res.text().catch(() => 'Unable to read response');
+        console.error(`[API] Non-JSON response:`, {
+          status: res.status,
+          contentType,
+          preview: responseText.substring(0, 200)
+        });
+        throw new Error(`[S-001] Sunucu HTML yanıt döndü (${res.status}) - Endpoint hatası olabilir`);
+      }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const errorMsg = err.error || `[S-001] Sunucu hatası (${res.status})`;
+        console.error(`[API] Error: ${errorMsg}`, err);
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      console.log(`[API] Success ${fullUrl}`, data);
+      return data;
+    } catch (err) {
+      console.error(`[API] Exception in apiFetch:`, err);
+      throw err;
     }
-    return res.json();
   }
 
   function getError(code, message) {
@@ -598,7 +638,7 @@ function App() {
     }
   }
 
-  const isAdmin = user?.username === 'proftvv';
+  const isAdmin = user?.role === 'admin';
 
   return (
     <ErrorBoundary>
@@ -658,6 +698,22 @@ function App() {
                 onClick={() => setActiveTab('templates')}
               >
                 Şablonlar
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                className={activeTab === 'users' ? 'primary' : 'secondary'}
+                onClick={() => setActiveTab('users')}
+              >
+                👥 Kullanıcılar
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                className={activeTab === 'logs' ? 'primary' : 'secondary'}
+                onClick={() => setActiveTab('logs')}
+              >
+                📋 Loglar
               </button>
             )}
           </div>
@@ -1258,6 +1314,16 @@ function App() {
                   </>
                 )}
               </section>
+            )}
+
+            {/* Users Tab - Admin Only */}
+            {activeTab === 'users' && (
+              <Users apiFetch={apiFetch} />
+            )}
+
+            {/* Logs Tab - Admin Only */}
+            {activeTab === 'logs' && (
+              <Logs apiFetch={apiFetch} />
             )}
           </>
         )}

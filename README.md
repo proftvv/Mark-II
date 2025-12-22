@@ -2,21 +2,22 @@
 
 **Report Dış Ticaret ve Lojistik - Dijital Raporlama Platformu**
 
-**Versiyon:** `2.0.0-alpha` (Mars Release) | **Son Güncelleme:** 17 Aralık 2025
+**Versiyon:** `1.5.0` | **Son Güncelleme:** 22 Aralık 2025
 
 Report Mark II, şirket içi PDF raporlama süreçlerini dijitalleştiren, LAN/WAN üzerinden erişilebilir modern bir web uygulamasıdır. Masaüstü yazılımlarının yerini alarak, herhangi bir cihazdan (PC, Tablet, Mobil) kolayca rapor oluşturulmasını ve yönetilmesini sağlar.
 
 ---
 
-## ✨ v2.0.0 "Mars" Release Highlights
+## ✨ v1.5.0 Release Highlights
 
-Bu majör sürüm, tam bir sistem yenilenmesi ve kod kalitesi iyileştirmesi sunar:
+Bu sürüm, admin yetkilerini genişleten ve sistem görünürlüğünü artıran özellikler içerir:
 
-- ✅ **Merkezi Versiyon Takibi:** 19 ayrı changelog dosyası tek VERSION dosyasında birleştirildi
-- ✅ **Temiz Proje Yapısı:** Debug dosyaları kaldırıldı, utility scriptler organize edildi  
-- ✅ **Production-Ready Logging:** Tüm console.log ifadeleri merkezi logger servisine geçirildi
-- 🚀 **Tek Tıkla Başlatma:** `start.bat` veya `start.ps1` ile tek komutla tüm sistem ayağa kalkar
-- 🔒 **RBAC & Güvenlik:** Role-based access control, merkezi error handling, admin audit logging
+- ✅ **Kullanıcı Yönetimi:** Tam CRUD işlemleri, rol ataması, şifre yönetimi
+- ✅ **Sistem Logları:** Gerçek zamanlı log görüntüleme, filtreleme ve istatistikler
+- ✅ **Gelişmiş Debug:** Request/response logging, detaylı hata takibi
+- ✅ **RBAC Geliştirmeleri:** Database role kolonu, rol bazlı yetkilendirme
+- ✅ **Tek Pencere Başlatma:** start.bat ile concurrently kullanımı
+- 🔍 **Comprehensive Logging:** Her işlem loglanıyor (INFO/WARN/ERROR)
 
 ---
 
@@ -35,8 +36,14 @@ Standard PDF şablonları üzerine dinamik veri girişi yaparak hatasız, standa
 *   **🗂️ Otomatik Belge Numaralandırma**  
     Her rapor benzersiz belge numarası alır (Örn: `P-20251217-042`).
     
-*   **🔒 Rol Tabanlı Yetkilendirme (RBAC)**
-    *   **Admin:** Şablon yönetimi, tüm raporları görme/silme, kullanıcı yönetimi
+*   **🔒 Rol Tabanlı Yetkilendirme (kullanıcı yönetimi, sistem logları, tüm raporları görme/silme
+    *   **Kullanıcı:** Sadece rapor oluşturma ve görüntüleme
+    
+*   **👥 Kullanıcı Yönetimi (Admin)**
+    Kullanıcı ekleme, düzenleme, silme ve rol ataması (User/Admin).
+    
+*   **📋 Sistem Logları (Admin)**
+    Gerçek zamanlı log görüntüleme, filtreleme (INFO/WARN/ERROR) ve istatistikler.e, kullanıcı yönetimi
     *   **Kullanıcı:** Sadece rapor oluşturma ve görüntüleme
     
 *   **🔍 Gelişmiş Arama & Filtreleme**  
@@ -140,7 +147,7 @@ node scripts/fix-password.js
 ---
 
 ## 📈 Sürüm Sistemi
-
+1.5.0` - User Management & System Logs (Admin features expansion
 Proje [Semantic Versioning](https://semver.org/) kullanır: **`MAJOR.MINOR.PATCH`**
 
 **Mevcut Sürüm:** `v2.0.0-alpha` (Mars Release)
@@ -156,9 +163,9 @@ Proje [Semantic Versioning](https://semver.org/) kullanır: **`MAJOR.MINOR.PATCH
 Detaylı değişiklik geçmişi için [VERSION](VERSION) dosyasına bakın.
 
 ---
-
-## 📂 Proje Yapısı
-
+, users, logs)
+│   ├── services/           # Business logic (pdfService, logger)
+│   ├── middleware/         # Auth, RBAC, request logger, error handler
 ```
 MARK-II/
 ├── src/                    # Backend (Node.js/Express)
@@ -173,14 +180,17 @@ MARK-II/
 │   ├── src/
 │   │   ├── App.jsx         # Main application
 │   │   ├── App.css         # Styles
-│   │   └── main.jsx        # Entry point
+│   │   ├── main.jsx        # Entry point
+│   │   └── components/     # React components (Users, Logs, PDFCanvas)
 │   ├── vite.config.js      # Vite configuration
 │   └── package.json        # Frontend dependencies
 ├── sql/                    # Database scripts
 │   ├── setup.sql           # Complete database setup (one-command)
 │   └── README.md           # SQL documentation
 ├── scripts/                # Utility scripts
-│   ├── add-user.js         # Add new user
+│   ├── fix-password.js     # Reset password
+│   ├── add-role-column.js  # Database migration for roles
+│   └── test-endpoints.js   # API endpoint testing
 │   └── fix-password.js     # Reset password
 ├── logs/                   # Application logs
 ├── temp_uploads/           # Temporary file storage
@@ -240,7 +250,17 @@ tail -f logs/app.log  # (Windows Git Bash)
 
 ### 3️⃣ Arşivde Arama
 1. "Arşiv" sekmesine git
-2. Belge numarası veya müşteri ID ile ara
+### 4️⃣ Admin: Kullanıcı Yönetimi
+1. "Kullanıcılar" sekmesine git
+2. "➕ Yeni Kullanıcı" butonuna tıkla
+3. Kullanıcı bilgilerini gir (username, ID, şifre, rol)
+4. Kaydet - Kullanıcı hemen aktif olur
+
+### 5️⃣ Admin: Sistem Loglarını İzleme
+1. "Loglar" sekmesine git
+2. Seviye filtresi ile ERROR loglarını gör
+3. Arama ile spesifik olayları bul
+4. Tarih aralığı ile belirli periyodu incele2. Belge numarası veya müşteri ID ile ara
 3. Tarih aralığı filtrele
 4. İstediğin raporu indir veya sil (admin)
 
@@ -273,7 +293,8 @@ taskkill /PID <process_id> /F
 ```powershell
 # PowerShell (Admin)
 Restart-Service MariaDB
-```
+``` (v1.5.0 dahil)
+- [ERROR_CODE_DEBUG.md](ERROR_CODE_DEBUG.md) - Hata kodları ve debug rehberi
 
 ### Frontend production build
 ```bash
@@ -312,8 +333,8 @@ Tüm hakları saklıdır © 2025 Report Dış Ticaret ve Lojistik
 ---
 
 ## 👨‍💻 Geliştirici
-
-**Özcan Yılmazçelebi (proftvv)**  
+v1.5.0 - Empowering Admins with User & Log Management"*  
+**v1.5.0** | Son Güncelleme: 22
 📧 [GitHub](https://github.com/proftvv)  
 🏢 Report Dış Ticaret ve Lojistik
 

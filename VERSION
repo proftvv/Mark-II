@@ -29,6 +29,240 @@ COMPLETE VERSION HISTORY
 ================================================================================
 
 ----------------------------------------
+v1.5.0 - User Management & System Logs
+Date: 2025-12-22
+----------------------------------------
+Major admin feature release adding complete user management and system log 
+monitoring capabilities. Enhanced debugging with comprehensive logging system.
+
+KEY FEATURES:
+✓ Full user management interface (admin only)
+✓ System logs viewer with advanced filtering
+✓ Role-based access control (RBAC) with database role column
+✓ Enhanced debugging with request/response logging
+✓ Single-window startup with concurrently
+✓ Comprehensive error tracking system
+
+USER MANAGEMENT:
+New Admin Features:
+- 👥 Users tab (admin only) with full CRUD operations
+- Create users with username, custom_id, password, role
+- Edit user details (username, custom_id, role)
+- Change user passwords (optional field on edit)
+- Delete users (with self-deletion protection)
+- Admin role assignment (User/Admin toggle)
+- Real-time user list with role badges
+
+Backend - New Routes (src/routes/users.js):
+- GET /users - List all users (admin only)
+- POST /users - Create new user (admin only)
+- PUT /users/:id - Update user (admin only)
+- DELETE /users/:id - Delete user (admin only)
+
+Frontend - New Component (Users.jsx):
+- User table with ID, username, custom_id, role, created_at
+- Add/Edit form with validation
+- Role selector (👤 User / 👑 Admin)
+- Delete confirmation dialogs
+- Real-time status messages
+- Loading states and error handling
+
+SYSTEM LOGS:
+New Admin Features:
+- 📋 Logs tab (admin only) with comprehensive log viewer
+- Real-time log display with color-coded severity levels
+- Advanced filtering (level, search, date range, limit)
+- Log statistics dashboard (total, info, warn, error counts)
+- Log file size display
+- Clear logs functionality (with backup)
+
+Backend - New Routes (src/routes/logs.js):
+- GET /logs - Fetch logs with filters (admin only)
+- GET /logs/stats - Log statistics (admin only)
+- DELETE /logs/clear - Clear logs with backup (admin only)
+
+Frontend - New Component (Logs.jsx):
+- Color-coded log levels (ℹ️ Info, ⚠️ Warning, 🔴 Error)
+- Statistics cards (total, info, warn, error, file size)
+- Filter panel (level, search, date range, limit)
+- Expandable meta data for each log entry
+- Auto-refresh capability
+- Clear logs with confirmation
+
+Log Level System:
+- ℹ️ INFO (Blue): Normal operations, successful requests
+- ⚠️ WARNING (Yellow): Failed logins, unauthorized attempts, important actions
+- 🔴 ERROR (Red): Database errors, crashes, system failures
+
+RBAC ENHANCEMENTS:
+Database Migration:
+- Added role ENUM('user', 'admin') column to users table
+- Migration script: migrations/003_add_role_to_users.sql
+- Script: scripts/add-role-column.js for automated migration
+- Updated proftvv user to admin role
+
+Frontend RBAC:
+- isAdmin check changed from username to role-based
+- Admin-only tabs (Şablonlar, Kullanıcılar, Loglar)
+- Role-based UI rendering
+- Session includes role information
+
+Backend RBAC:
+- adminOnly middleware validates user role
+- All admin routes protected with adminOnly
+- Role information in session
+- Admin actions logged with username
+
+DEBUGGING SYSTEM:
+Request/Response Logging:
+- New Middleware: src/middleware/requestLogger.js
+- Logs all incoming requests with metadata
+- Logs all outgoing responses with status and duration
+- Includes session info, user ID, username
+- Automatic timing measurement
+
+Error Handling:
+- New Middleware: src/middleware/errorHandler.js
+- Catches unhandled errors across all routes
+- Structured error logging with full context
+- JSON error responses with error codes
+- Development mode includes stack traces
+
+Frontend Debug Logging:
+- Enhanced apiFetch with console logging
+- Request logging: method, URL, headers, body
+- Response logging: status, content-type
+- Error logging with response preview
+- Component mount/unmount tracking
+- Operation-specific logging (Users, Logs components)
+
+Debug Documentation:
+- New File: ERROR_CODE_DEBUG.md
+- Complete error code reference
+- Debugging tips and common issues
+- Log level descriptions
+- Troubleshooting guide
+
+STARTUP IMPROVEMENTS:
+Single Window Startup:
+- Modified start.bat to use npm run start:all
+- Uses concurrently package (already installed)
+- Both backend and frontend in same window
+- Color-coded output (cyan/yellow)
+- Ctrl+C stops both services
+- No multiple CMD windows
+
+Vite Proxy Configuration:
+- Added /users proxy to vite.config.js
+- Added /logs proxy to vite.config.js
+- Fixed 404 errors for new endpoints
+- Seamless API routing in development
+
+NEW FILES:
+Backend:
+- src/routes/users.js (183 lines) - User CRUD operations
+- src/routes/logs.js (149 lines) - Log management
+- src/middleware/requestLogger.js (35 lines) - Request logging
+- src/middleware/errorHandler.js (28 lines) - Error handling
+- scripts/add-role-column.js (74 lines) - Role migration script
+- scripts/test-endpoints.js (49 lines) - Endpoint testing utility
+
+Frontend:
+- frontend/src/components/Users.jsx (344 lines) - User management UI
+- frontend/src/components/Logs.jsx (417 lines) - Log viewer UI
+
+Documentation:
+- ERROR_CODE_DEBUG.md (94 lines) - Debug reference guide
+
+Migrations:
+- migrations/003_add_role_to_users.sql (11 lines) - Role column migration
+
+FILES MODIFIED:
+Backend:
+- src/app.js - Added users/logs routes, request logger, error handler, debug route
+- src/routes/auth.js - Role information in session
+- src/services/logger.js - Used across new routes
+
+Frontend:
+- frontend/src/App.jsx - New tabs, imports, debug logging, error handling
+- frontend/src/components/Users.jsx - Complete user management
+- frontend/src/components/Logs.jsx - Complete log viewer
+- frontend/vite.config.js - Added /users and /logs proxy
+
+Configuration:
+- start.bat - Single window startup with concurrently
+- VERSION - This update
+
+ERROR CODES IMPLEMENTED:
+User Management (U-XXX):
+- U-001: Kullanıcılar yüklenemedi
+- U-002: Kullanıcı adı ve şifre gerekli
+- U-003: Geçersiz rol
+- U-004: Kullanıcı adı veya ID zaten mevcut
+- U-005: Kullanıcı oluşturulamadı
+- U-006: Kullanıcı adı gerekli
+- U-007: Geçersiz rol
+- U-008: Kullanıcı bulunamadı
+- U-009: Kullanıcı adı veya ID zaten kullanımda
+- U-010: Kullanıcı güncellenemedi
+- U-011: Kendi hesabınızı silemezsiniz
+- U-012: Kullanıcı bulunamadı
+- U-013: Kullanıcı silinemedi
+
+Log Management (LOG-XXX):
+- LOG-001: Loglar yüklenemedi
+- LOG-002: İstatistikler yüklenemedi
+- LOG-003: Loglar temizlenemedi
+
+STATISTICS:
+- Total Lines Added: ~1,400+
+- New Components: 2 (Users.jsx, Logs.jsx)
+- New Routes: 2 (users.js, logs.js)
+- New Middleware: 2 (requestLogger, errorHandler)
+- New API Endpoints: 7
+- New Error Codes: 16
+- Migration Scripts: 2
+
+SECURITY:
+✅ Admin-only access enforced on all new routes
+✅ Password hashing with bcrypt (10 rounds)
+✅ Self-deletion protection (users can't delete themselves)
+✅ Role validation on all admin operations
+✅ Session-based authentication
+✅ Comprehensive audit logging
+
+USER EXPERIENCE:
+✅ Intuitive user management interface
+✅ Real-time log monitoring
+✅ Advanced search and filtering
+✅ Color-coded log levels for quick scanning
+✅ Responsive design (mobile-friendly)
+✅ Loading states and status messages
+✅ Confirmation dialogs for destructive actions
+
+DEVELOPER EXPERIENCE:
+✅ Comprehensive debug logging system
+✅ Request/response tracking
+✅ Error tracking with full context
+✅ Component lifecycle logging
+✅ Easy endpoint testing (test-endpoints.js)
+✅ Debug documentation (ERROR_CODE_DEBUG.md)
+
+DEPLOYMENT:
+✅ Single command startup (start.bat)
+✅ Automatic dependency installation
+✅ Database migration scripts included
+✅ No breaking changes to existing features
+✅ Backward compatible with v1.4.x
+
+NEXT STEPS:
+- Consider pagination for large user/log lists
+- Add export functionality for logs (CSV/JSON)
+- Add user activity tracking
+- Add log retention policies
+- Add user roles beyond admin/user (future)
+
+----------------------------------------
 v1.4.2 - Template Editing Feature
 Date: 2025-12-12
 ----------------------------------------
