@@ -15,12 +15,22 @@ async function reserveDocNumber() {
   // Transaction kullanmak daha guvenli olurdu ama basitce UPDATE/SELECT yapalim
   const today = new Date().toISOString().split('T')[0];
 
-  // ON DUPLICATE KEY UPDATE ile sayaci arttir
-  await pool.execute(
-    `INSERT INTO doc_counters (date_key, last_seq) VALUES (?, 1)
-         ON DUPLICATE KEY UPDATE last_seq = last_seq + 1`,
-    [today]
-  );
+  // PostgreSQL: ON CONFLICT, MySQL: ON DUPLICATE KEY UPDATE
+  const isPostgres = process.env.DATABASE_URL || process.env.VERCEL;
+  
+  if (isPostgres) {
+    await pool.execute(
+      `INSERT INTO doc_counters (date_key, last_seq) VALUES (?, 1)
+           ON CONFLICT (date_key) DO UPDATE SET last_seq = doc_counters.last_seq + 1`,
+      [today]
+    );
+  } else {
+    await pool.execute(
+      `INSERT INTO doc_counters (date_key, last_seq) VALUES (?, 1)
+           ON DUPLICATE KEY UPDATE last_seq = last_seq + 1`,
+      [today]
+    );
+  }
 
   const [rows] = await pool.execute('SELECT last_seq FROM doc_counters WHERE date_key = ?', [today]);
   return { date: new Date(today), seq: rows[0].last_seq };
