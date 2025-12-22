@@ -9,7 +9,7 @@ const config = {
   port: Number(env('APP_PORT', 3000)),
   host: env('APP_HOST', '0.0.0.0'),
   sessionSecret: env('SESSION_SECRET', 'change-me'),
-  storageRoot: env('STORAGE_ROOT', 'Z:\\\\MARK-II\\\\raporlar'),
+  storageRoot: process.env.VERCEL ? '/tmp/raporlar' : env('STORAGE_ROOT', 'Z:\\\\MARK-II\\\\raporlar'),
   adminIps: env('ADMIN_IPS', '127.0.0.1,::1')
     .split(',')
     .map(ip => ip.trim())

@@ -1,32 +1,28 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
-  "installCommand": "npm install",
-  "devCommand": "npm run dev",
   "rewrites": [
     {
       "source": "/auth/:path*",
-      "destination": "/api"
+      "destination": "/api/index"
     },
     {
       "source": "/templates/:path*",
-      "destination": "/api"
+      "destination": "/api/index"
     },
     {
       "source": "/reports/:path*",
-      "destination": "/api"
+      "destination": "/api/index"
     },
     {
       "source": "/users/:path*",
-      "destination": "/api"
+      "destination": "/api/index"
     },
     {
       "source": "/logs/:path*",
-      "destination": "/api"
+      "destination": "/api/index"
     },
     {
       "source": "/files/:path*",
-      "destination": "/api"
+      "destination": "/api/index"
     }
   ]
 }

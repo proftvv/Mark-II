@@ -24,3 +24,5 @@ Thumbs.db
 # Root'taki diğer dosyalar push'lanmaz
 
 
+.vercel
+.env*.local
