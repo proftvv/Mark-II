@@ -4,9 +4,8 @@ import Users from './components/Users';
 import Logs from './components/Logs';
 import './App.css';
 
-// Production: /api (same domain), Development: http://localhost:3000
-const API_BASE = import.meta.env.VITE_API_BASE || 
-  (import.meta.env.DEV ? 'http://localhost:3000' : '');
+// Always use same-origin for API in production
+const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:3000';
 
 
 class ErrorBoundary extends React.Component {
