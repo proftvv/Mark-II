@@ -1,10 +1,10 @@
-# 📊 Report Mark II
+# 📊 Mark II
 
-**Report Dış Ticaret ve Lojistik - Dijital Raporlama Platformu**
+**Dijital Raporlama Platformu**
 
 **Versiyon:** `1.5.0` | **Son Güncelleme:** 22 Aralık 2025
 
-Report Mark II, şirket içi PDF raporlama süreçlerini dijitalleştiren, LAN/WAN üzerinden erişilebilir modern bir web uygulamasıdır. Masaüstü yazılımlarının yerini alarak, herhangi bir cihazdan (PC, Tablet, Mobil) kolayca rapor oluşturulmasını ve yönetilmesini sağlar.
+Mark II, şirket içi PDF raporlama süreçlerini dijitalleştiren, LAN/WAN üzerinden erişilebilir modern bir web uygulamasıdır. Masaüstü yazılımlarının yerini alarak, herhangi bir cihazdan (PC, Tablet, Mobil) kolayca rapor oluşturulmasını ve yönetilmesini sağlar.
 
 ---
 
@@ -336,7 +336,6 @@ Tüm hakları saklıdır © 2025 Report Dış Ticaret ve Lojistik
 v1.5.0 - Empowering Admins with User & Log Management"*  
 **v1.5.0** | Son Güncelleme: 22
 📧 [GitHub](https://github.com/proftvv)  
-🏢 Report Dış Ticaret ve Lojistik
 
 ---
 
