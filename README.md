@@ -325,11 +325,6 @@ npm run build
 
 ---
 
-## 📜 Lisans
-
-Bu proje Report Dış Ticaret ve Lojistik şirketi için geliştirilmiştir.  
-Tüm hakları saklıdır © 2025 Report Dış Ticaret ve Lojistik
-
 ---
 
 ## 👨‍💻 Geliştirici
@@ -346,6 +341,6 @@ Bu projeyi geliştirmede kullanılan açık kaynak kütüphanelere teşekkürler
 
 ---
 
-*"Mars Release - A New Foundation for Report Mark II"*  
+*"Mars Release - A New Foundation for Mark II"*  
 **v2.0.0-alpha** | Son Güncelleme: 17 Aralık 2025
 
